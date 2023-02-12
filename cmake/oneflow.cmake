@@ -328,6 +328,17 @@ if(BUILD_PYTHON OR BUILD_CPP_API)
   endif()
 endif()
 
+if (BUILD_ROCM)
+  # AMD compiler fails to compile these three files with '-O1/2/3'.
+  # The value of `COMPILE_OPTIONS` target property is added after CMAKE_<LANG>_FLAGS_<CONFIG>,
+  # so '-O0' will override '-O1/2/3'.
+  set_source_files_properties(${PROJECT_SOURCE_DIR}/oneflow/user/kernels/median_with_indices_kernel.hip.cpp
+                              ${PROJECT_SOURCE_DIR}/oneflow/user/kernels/radix_sort_top_k_kernel.hip.cpp
+                              ${PROJECT_SOURCE_DIR}/oneflow/user/kernels/arg_sort_kernel.hip.cpp
+                              # ${PROJECT_SOURCE_DIR}/oneflow/core/ep/cuda/primitive/broadcast_elementwise_binary_math.hip.cpp
+                              PROPERTIES COMPILE_OPTIONS "-O0")
+endif()
+
 if(BUILD_PYTHON)
 
   # py ext lib
