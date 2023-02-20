@@ -260,14 +260,14 @@ struct UnaryFunctor<DeviceType::kCUDA, UnaryOp::kAbs, nv_bfloat16, nv_bfloat16> 
 
 /*********half dtype support*********/
 template<typename Dst>
-struct UnaryFunctor<DeviceType::kCUDA, UnaryOp::kCast, half, Dst> {
+struct UnaryFunctor<DeviceType::kCUDA, UnaryOp::kCast, Dst, half> {
   OF_DEVICE_FUNC UnaryFunctor(Scalar attr0, Scalar attr1) {}
 
   OF_DEVICE_FUNC Dst operator()(half src) const { return static_cast<Dst>(__half2float(src)); }
 };
 
 template<typename Src>
-struct UnaryFunctor<DeviceType::kCUDA, UnaryOp::kCast, Src, half> {
+struct UnaryFunctor<DeviceType::kCUDA, UnaryOp::kCast, half, Src> {
   OF_DEVICE_FUNC UnaryFunctor(Scalar attr0, Scalar attr1) {}
 
   OF_DEVICE_FUNC half operator()(Src src) const { return __float2half(static_cast<float>(src)); }
@@ -283,7 +283,7 @@ struct UnaryFunctor<DeviceType::kCUDA, UnaryOp::kCast, half, half> {
 /*********nv_bfloat16 dtype support*********/
 #if CUDA_VERSION >= 11000
 template<>
-struct UnaryFunctor<DeviceType::kCUDA, UnaryOp::kCast, half, nv_bfloat16> {
+struct UnaryFunctor<DeviceType::kCUDA, UnaryOp::kCast, nv_bfloat16, half> {
   OF_DEVICE_FUNC UnaryFunctor(Scalar attr0, Scalar attr1) {}
 
   OF_DEVICE_FUNC nv_bfloat16 operator()(half src) const {
@@ -292,7 +292,7 @@ struct UnaryFunctor<DeviceType::kCUDA, UnaryOp::kCast, half, nv_bfloat16> {
 };
 
 template<typename Dst>
-struct UnaryFunctor<DeviceType::kCUDA, UnaryOp::kCast, nv_bfloat16, Dst> {
+struct UnaryFunctor<DeviceType::kCUDA, UnaryOp::kCast, Dst, nv_bfloat16> {
   OF_DEVICE_FUNC UnaryFunctor(Scalar attr0, Scalar attr1) {}
 
   OF_DEVICE_FUNC Dst operator()(nv_bfloat16 src) const {
@@ -301,7 +301,7 @@ struct UnaryFunctor<DeviceType::kCUDA, UnaryOp::kCast, nv_bfloat16, Dst> {
 };
 
 template<typename Src>
-struct UnaryFunctor<DeviceType::kCUDA, UnaryOp::kCast, Src, nv_bfloat16> {
+struct UnaryFunctor<DeviceType::kCUDA, UnaryOp::kCast, nv_bfloat16, Src> {
   OF_DEVICE_FUNC UnaryFunctor(Scalar attr0, Scalar attr1) {}
 
   OF_DEVICE_FUNC nv_bfloat16 operator()(Src src) const {
@@ -310,7 +310,7 @@ struct UnaryFunctor<DeviceType::kCUDA, UnaryOp::kCast, Src, nv_bfloat16> {
 };
 
 template<>
-struct UnaryFunctor<DeviceType::kCUDA, UnaryOp::kCast, nv_bfloat16, half> {
+struct UnaryFunctor<DeviceType::kCUDA, UnaryOp::kCast, half, nv_bfloat16> {
   OF_DEVICE_FUNC UnaryFunctor(Scalar attr0, Scalar attr1) {}
 
   OF_DEVICE_FUNC half operator()(nv_bfloat16 src) const {
@@ -448,20 +448,20 @@ SPECIALIZATION_PSEUDO_BFLOAT16_UNARY_FUNCTOR(UnaryOp::kQuickGelu);
 
 template<>
 struct UnaryFunctor<DeviceType::kCUDA, UnaryOp::kIsInf, bool, nv_bfloat16> {
-  UnaryFunctor(Scalar attr0, Scalar attr1) {}
+  OF_DEVICE_FUNC UnaryFunctor(Scalar attr0, Scalar attr1) {}
 
   OF_DEVICE_FUNC bool operator()(nv_bfloat16 src) const { return isinf(__bfloat162float(src)); }
 };
 
 template<>
 struct UnaryFunctor<DeviceType::kCUDA, UnaryOp::kIsNan, bool, nv_bfloat16> {
-  UnaryFunctor(Scalar attr0, Scalar attr1) {}
+  OF_DEVICE_FUNC UnaryFunctor(Scalar attr0, Scalar attr1) {}
 
   OF_DEVICE_FUNC bool operator()(nv_bfloat16 src) const { return isnan(__bfloat162float(src)); }
 };
 template<>
 struct UnaryFunctor<DeviceType::kCUDA, UnaryOp::kIsFinite, bool, nv_bfloat16> {
-  UnaryFunctor(Scalar attr0, Scalar attr1) {}
+  OF_DEVICE_FUNC UnaryFunctor(Scalar attr0, Scalar attr1) {}
 
   OF_DEVICE_FUNC bool operator()(nv_bfloat16 src) const { return isfinite(__bfloat162float(src)); }
 };
