@@ -55,6 +55,7 @@ class Device {
   virtual void Free(const AllocationOptions& options, void* ptr) = 0;
   virtual Maybe<void> AllocPinned(const AllocationOptions& options, void** ptr, size_t size) = 0;
   virtual void FreePinned(const AllocationOptions& options, void* ptr) = 0;
+  virtual bool IsStreamOrderedMemoryAllocationSupported() const;
 };
 
 }  // namespace ep
