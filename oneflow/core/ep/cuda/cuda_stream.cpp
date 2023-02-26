@@ -452,6 +452,14 @@ Maybe<void> CudaStream::GetAsyncError() {
   }
 }
 
+Maybe<void> CudaStream::AllocAsync(void** ptr, size_t size) {
+  UNIMPLEMENTED_THEN_RETURN();
+}
+
+Maybe<void> CudaStream::FreeAsync(void* ptr) {
+  UNIMPLEMENTED_THEN_RETURN();
+}
+
 hipStream_t CudaStream::cuda_stream() const { return cuda_stream_; }
 
 hipblasHandle_t CudaStream::cublas_handle() const { return cublas_handle_; }

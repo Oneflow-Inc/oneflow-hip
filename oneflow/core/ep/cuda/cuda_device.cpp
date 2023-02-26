@@ -369,6 +369,10 @@ void CudaDevice::FreePinned(const AllocationOptions& options, void* ptr) {
   OF_CUDA_CHECK(hipHostFree(ptr));
 }
 
+bool CudaDevice::IsStreamOrderedMemoryAllocationSupported() const {
+  return false;
+}
+
 const hipDeviceProp_t& CudaDevice::properties() const { return properties_; }
 
 const void* CudaDevice::GetConstZeros(DataType data_type, size_t n) const {

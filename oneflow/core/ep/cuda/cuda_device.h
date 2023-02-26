@@ -113,6 +113,7 @@ class CudaDevice : public Device {
   Maybe<void> AllocPinned(const AllocationOptions& options, void** ptr, size_t size) override;
   void FreePinned(const AllocationOptions& options, void* ptr) override;
 
+  bool IsStreamOrderedMemoryAllocationSupported() const override;
   const hipDeviceProp_t& properties() const;
 
   const void* GetConstZeros(DataType data_type, size_t n) const;
