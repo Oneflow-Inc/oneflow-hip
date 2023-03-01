@@ -18,7 +18,12 @@ limitations under the License.
 #include "oneflow/core/kernel/kernel_util.cuh"
 #include "oneflow/core/kernel/cuda_graph_support.h"
 #include "oneflow/core/ep/cuda/cuda_stream.h"
+#ifdef WITH_ROCM
+#include "hip/hip_runtime.h"
+#include <hipcub/hipcub.hpp>
+#else
 #include <cub/cub.cuh>
+#endif
 
 namespace oneflow {
 
@@ -102,7 +107,7 @@ struct InplaceFmaScalar {
   }
 };
 
-#if __CUDA_ARCH_ >= 530
+#if (__CUDA_ARCH_ >= 530) || defined(WITH_ROCM)
 template<size_t pack_size>
 struct InplaceFmaScalar<half, pack_size> {
   __device__ void operator()(AlignedArray<half, pack_size>* array, half m, half a) {
@@ -498,7 +503,11 @@ __global__ void QuantizedMatmulBiasGroupN(int32_t M, int32_t N, int32_t K, int32
         InplaceFma<T, d_pack_size>()(&weights, scale_k, zero_k);
         MultiplyAccumulate<T, C, d_pack_size>()(xs, weights, &t_sum);
       }
+#ifdef WITH_ROCM
+      using BlockReduce = hipcub::BlockReduce<C, block_size>;
+#else
       using BlockReduce = cub::BlockReduce<C, block_size>;
+#endif
       __shared__ typename BlockReduce::TempStorage temp_storage;
       C sum = BlockReduce(temp_storage).Sum(t_sum);
       if (threadIdx.x == 0) {
@@ -629,7 +638,11 @@ __global__ void QuantizedMatmulBiasGroupK(int32_t M, int32_t N, int32_t K, int32
         InplaceFmaScalar<T, d_pack_size>()(&weights, group_scale, group_zero);
         MultiplyAccumulate<T, C, d_pack_size>()(xs, weights, &t_sum);
       }
+#ifdef WITH_ROCM
+      using BlockReduce = hipcub::BlockReduce<C, block_size>;
+#else
       using BlockReduce = cub::BlockReduce<C, block_size>;
+#endif
       __shared__ typename BlockReduce::TempStorage temp_storage;
       C sum = BlockReduce(temp_storage).Sum(t_sum);
       if (threadIdx.x == 0) {
