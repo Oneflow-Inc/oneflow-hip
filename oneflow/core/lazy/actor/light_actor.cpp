@@ -215,30 +215,6 @@ bool NeedExecKernelWhenInplace(const TaskProto& task) {
   return false;
 }
 
-bool NeedExecKernelWhenInplace(const TaskProto& task) {
-  int64_t data_regst_cnt = 0;
-  for (const auto& pair : task.produced_regst_desc()) {
-    if (pair.second.regst_desc_type().has_data_regst_desc()) {
-      if (data_regst_cnt != 0) { return true; }
-      data_regst_cnt += 1;
-      const DataRegstDesc& regst_desc = pair.second.regst_desc_type().data_regst_desc();
-      if (regst_desc.lbi2blob_desc().size() != 1) { return true; }
-      if (regst_desc.lbi2blob_desc().begin()->blob_desc().is_dynamic()) { return true; }
-    }
-  }
-  if (data_regst_cnt != 1) { return true; }
-  if (task.exec_sequence().exec_node().size() != 1) { return true; }
-  const OperatorConf& op_conf =
-      task.exec_sequence().exec_node(0).kernel_conf().op_attribute().op_conf();
-  if (!op_conf.has_user_conf()) { return true; }
-  const std::string& op_type = op_conf.user_conf().op_type_name();
-  const bool is_const_inplace_op_type = (op_type == "expand_dims") || (op_type == "squeeze")
-                                        || (op_type == "reshape") || (op_type == "reshape_like")
-                                        || (op_type == "transpose");
-  if (!is_const_inplace_op_type) { return true; }
-  return false;
-}
-
 #if defined(WITH_CUDA_GRAPHS) || defined(WITH_ROCM_GRAPHS)
 
 bool IsCUDAGraphSupported(const Kernel* kernel) {

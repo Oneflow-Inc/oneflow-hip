@@ -373,7 +373,7 @@ __global__ void InitValueKernel(uint64_t seed, const int32_t line_size,
       const float a = initializer.trunc_normal_param.a;
       const float b = initializer.trunc_normal_param.b;
       while (true) {
-        value = curand_normal(&state) * std + mean;
+        value = GPURAND(_normal)(&state) * std + mean;
         if (value >= a && value <= b) { break; }
         skipahead(line_size, &state);
       }
@@ -473,7 +473,7 @@ __global__ void FusedInitSliceCast(const int32_t elem_cnt, uint64_t seed, const 
           const float a = initializer.trunc_normal_param.a;
           const float b = initializer.trunc_normal_param.b;
           while (true) {
-            value = curand_normal(&state) * std + mean;
+            value = GPURAND(_normal)(&state) * std + mean;
             if (value >= a && value <= b) { break; }
             skipahead(line_size, &state);
           }

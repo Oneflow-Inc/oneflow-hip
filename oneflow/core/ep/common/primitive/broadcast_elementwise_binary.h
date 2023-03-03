@@ -55,13 +55,16 @@ inline bool IsDimsEquals(size_t num_src0_dims, const int64_t* src0_dims, size_t 
 
 #define BINARY_MATH_OP_SEQ_2                           \
   OF_PP_MAKE_TUPLE_SEQ(BinaryOp::kFloorMod)            \
-  OF_PP_MAKE_TUPLE_SEQ(BinaryOp::kScalarBasePowerGrad) \
   OF_PP_MAKE_TUPLE_SEQ(BinaryOp::kScalarExpPowerGrad)
+
+#define BINARY_MATH_OP_SEQ_3                           \
+  OF_PP_MAKE_TUPLE_SEQ(BinaryOp::kScalarBasePowerGrad) 
 
 #define BINARY_MATH_OP_SEQ \
   BINARY_MATH_OP_SEQ_0     \
   BINARY_MATH_OP_SEQ_1     \
-  BINARY_MATH_OP_SEQ_2
+  BINARY_MATH_OP_SEQ_2     \
+  BINARY_MATH_OP_SEQ_3
 
 #define BINARY_COMPARISION_OP_SEQ_0         \
   OF_PP_MAKE_TUPLE_SEQ(BinaryOp::kEqual)    \

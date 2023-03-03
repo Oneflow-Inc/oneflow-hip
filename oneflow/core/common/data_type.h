@@ -41,7 +41,7 @@ limitations under the License.
 namespace std {
 
 // Extend numeric_limits<half> for the C++ standard library.
-#if defined(WITH_CUDA) || defined(WITH_ROCM)
+#if defined(WITH_CUDA)
 
 template<>
 struct numeric_limits<half> {

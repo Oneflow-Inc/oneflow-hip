@@ -102,11 +102,11 @@ GPU(Error_t) LaunchCudaKernel(GPU(Stream_t) stream, const int64_t* cond_dims, co
   int num_blocks;
   {
     GPU(Error_t) err = GetNumBlocks(params.elem_cnt, &num_blocks);
-    if (err != cudaSuccess) { return err; }
+    if (err != GPU(Success)) { return err; }
   }
   BroadcastElementwiseWhereCudaKernel<T, CondT, IndexT, ndim, cond_pack_size, x_pack_size,
                                       y_pack_size><<<num_blocks, kBlockSize, 0, stream>>>(params);
-  return cudaPeekAtLastError();
+  return GPU(PeekAtLastError)();
 }
 
 template<typename T, typename CondT, typename IndexT, size_t ndim, size_t cond_pack_size,
