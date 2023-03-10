@@ -1146,16 +1146,34 @@ Maybe<void> InsertNcclLogicalOpPass::Apply(const OpGraph& op_graph, JobBuilder* 
                                      &stream_offset);
       total_op_num += ordered_op_nodes.size();
     }
-    if (stream_offset >= 2 && total_op_num >= 1000) {
+    uint32_t stream_offset_limit =
+      ParseIntegerFromEnv("RCCL_STREAM_OFFSET_LIMIT", 2);
+    int64_t total_op_num_limit =
+      ParseIntegerFromEnv("RCCL_TOTAL_OP_NUM_LIMIT", 1000);
+    const bool rccl_force_sync =
+      ParseBooleanFromEnv("RCCL_FORCE_SYNC", false);
+    if (rccl_force_sync){
       LOG(WARNING) << " In Graph: " << job_builder->job().job_conf().job_name()
-                   << " Placement: " << pair.first << " the total_op_num = " << total_op_num
-                   << " and has " << stream_offset
-                   << " different nccl stream which is possible to trigger cuda stream kernel "
-                      "launch upper limit."
-                   << " So the nccl logical kernel will from async to sync exec, which may affect "
-                      "performance.";
-      EagerNcclCommMgr* comm_mgr = CHECK_NOTNULL(Singleton<EagerNcclCommMgr>::Get());
-      comm_mgr->SetAsyncLaunchNcclLogicalKernel(false);
+                    << " Placement: " << pair.first << " the total_op_num = " << total_op_num
+                    << " and has " << stream_offset
+                    << " different RCCL stream which is possible to trigger ROCM stream kernel "
+                        "launch upper limit."
+                    << " So the RCCL logical kernel will from async to sync exec, which may affect "
+                       "performance.";
+        EagerNcclCommMgr* comm_mgr = CHECK_NOTNULL(Singleton<EagerNcclCommMgr>::Get());
+        comm_mgr->SetAsyncLaunchNcclLogicalKernel(false);
+    } else {
+      if (stream_offset >= stream_offset_limit && total_op_num >= total_op_num_limit) {
+        LOG(WARNING) << " In Graph: " << job_builder->job().job_conf().job_name()
+                    << " Placement: " << pair.first << " the total_op_num = " << total_op_num
+                    << " and has " << stream_offset
+                    << " different nccl stream which is possible to trigger cuda stream kernel "
+                        "launch upper limit."
+                    << " So the nccl logical kernel will from async to sync exec, which may affect "
+                       "performance.";
+        EagerNcclCommMgr* comm_mgr = CHECK_NOTNULL(Singleton<EagerNcclCommMgr>::Get());
+        comm_mgr->SetAsyncLaunchNcclLogicalKernel(false);
+      }
     }
 
     // NOTE(chengcheng): insert acc for all subgraph with same placement group
