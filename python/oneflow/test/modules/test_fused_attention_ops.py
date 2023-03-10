@@ -19,6 +19,7 @@ import numpy as np
 from oneflow.test_utils.test_util import GenArgList
 import math
 import itertools
+import os
 
 import oneflow as flow
 
@@ -47,15 +48,37 @@ def _ref(
     return out
 
 
-def _to_layout(t, layout):
+def _to_layout(ts, layout, tensor_index):
     if layout == "BMHK":
-        return t
+        return ts[tensor_index]
     elif layout == "BM(HK)":
-        return t.view(t.shape[0], t.shape[1], -1)
+        return ts[tensor_index].view(
+            ts[tensor_index].shape[0], ts[tensor_index].shape[1], -1
+        )
     elif layout == "MB(HK)":
-        return t.view(t.shape[0], t.shape[1], -1).transpose(0, 1)
+        return (
+            ts[tensor_index]
+            .view(ts[tensor_index].shape[0], ts[tensor_index].shape[1], -1)
+            .transpose(0, 1)
+        )
     elif layout == "BHMK":
-        return t.transpose(1, 2)
+        return ts[tensor_index].transpose(1, 2)
+    elif layout == "MBHK":
+        return ts[tensor_index].transpose(0, 1)
+    elif layout == "BM(H3K)":
+        return flow.stack(ts, -2).view(ts[0].shape[0], ts[0].shape[1], -1)
+    elif layout == "MB(H3K)":
+        return (
+            flow.stack(ts, -2).view(ts[0].shape[0], ts[0].shape[1], -1).transpose(0, 1)
+        )
+    elif layout == "BM(H2K)":
+        return flow.stack(ts[1:], -2).view(ts[1].shape[0], ts[1].shape[1], -1)
+    elif layout == "MB(H2K)":
+        return (
+            flow.stack(ts[1:], -2)
+            .view(ts[1].shape[0], ts[1].shape[1], -1)
+            .transpose(0, 1)
+        )
     else:
         raise NotImplementedError
 
@@ -71,15 +94,17 @@ def _fused_mha(
     query_layout="BM(HK)",
     key_layout="BM(HK)",
     value_layout="BM(HK)",
+    output_layout="MB(HK)",
 ):
     query_head_size = query.shape[-1]
-    query = _to_layout(query, query_layout)
-    key = _to_layout(key, key_layout)
-    value = _to_layout(value, value_layout)
+    ts = [query, key, value]
+    query = _to_layout(ts, query_layout, 0)
+    key = _to_layout(ts, key_layout, 1)
+    value = _to_layout(ts, value_layout, 2)
     if attn_bias is not None and attn_bias.shape[-1] % 8 != 0:
         pad = 8 - attn_bias.shape[-1] % 8
         attn_bias = flow.pad(attn_bias, (0, pad), "constant", 0)
-    return flow._C.fused_multi_head_attention_inference_v2(
+    output = flow._C.fused_multi_head_attention_inference_v2(
         query=query,
         key=key,
         value=value,
@@ -90,6 +115,63 @@ def _fused_mha(
         query_layout=query_layout,
         key_layout=key_layout,
         value_layout=value_layout,
+        output_layout=output_layout,
+    )
+    if output_layout == "BM(HK)":
+        return output
+    elif output_layout == "MB(HK)":
+        return output.transpose(0, 1)
+    else:
+        raise NotImplementedError
+
+
+def _test_fused_attention_concat_past_key_value(
+    test_case,
+    dtype,
+    b,
+    past_m,
+    m,
+    h,
+    k,
+    past_key_layout,
+    past_value_layout,
+    key_layout,
+    value_layout,
+):
+    past_key = flow.randn((b, past_m, h, k), device="cuda", dtype=flow.float,).to(dtype)
+    past_value = flow.randn((b, past_m, h, k), device="cuda", dtype=flow.float,).to(
+        dtype
+    )
+    key = flow.randn((b, m, h, k), device="cuda", dtype=flow.float,).to(dtype)
+    value = flow.randn((b, m, h, k), device="cuda", dtype=flow.float,).to(dtype)
+
+    (
+        fused_concated_key,
+        fused_concated_value,
+    ) = flow._C.fused_attention_concat_past_key_value(
+        past_key=_to_layout([past_key, past_key, past_value], past_key_layout, 1),
+        past_key_layout=past_key_layout,
+        past_value=_to_layout([past_key, past_key, past_value], past_value_layout, 2),
+        past_value_layout=past_value_layout,
+        key=_to_layout([key, key, value], key_layout, 1),
+        key_layout=key_layout,
+        value=_to_layout([key, key, value], value_layout, 2),
+        value_layout=value_layout,
+        key_head_size=k,
+    )
+    concated_key = flow.cat([past_key, key], dim=1)
+    concated_value = flow.cat([past_value, value], dim=1)
+    ref_concated_key = _to_layout(
+        [concated_key, concated_key, concated_value], past_key_layout, 1
+    )
+    ref_concated_value = _to_layout(
+        [concated_key, concated_key, concated_value], past_value_layout, 2
+    )
+    test_case.assertTrue(
+        np.array_equal(fused_concated_key.numpy(), ref_concated_key.numpy())
+    )
+    test_case.assertTrue(
+        np.array_equal(fused_concated_value.numpy(), ref_concated_value.numpy())
     )
 
 
@@ -107,6 +189,7 @@ def _test_fused_multi_head_attention_inference(
     query_layout="BM(HK)",
     key_layout="BM(HK)",
     value_layout="BM(HK)",
+    output_layout="BM(HK)",
 ):
     query = flow.randn(
         (batch_size, query_seq_len, num_heads, query_head_size),
@@ -134,6 +217,7 @@ def _test_fused_multi_head_attention_inference(
         query_layout=query_layout,
         key_layout=key_layout,
         value_layout=value_layout,
+        output_layout=output_layout,
     ).numpy()
     ref_out = _ref(
         query,
@@ -297,10 +381,22 @@ class TestFusedMultiHeadAttentionInference(flow.unittest.TestCase):
         )
 
     def test_multi_head_attention_inference_with_layout(test_case):
-        layouts = ["BM(HK)", "BMHK", "BHMK", "MB(HK)"]
+        layouts = [
+            "BM(HK)",
+            "BMHK",
+            "MBHK",
+            "BHMK",
+            "MB(HK)",
+            "BM(H3K)",
+            "BM(H2K)",
+            "MB(H3K)",
+            "MB(H2K)",
+        ]
         for query_layout, key_layout, value_layout in itertools.product(
             layouts, layouts, layouts
         ):
+            if query_layout == "BM(H2K)" or query_layout == "MB(H2K)":
+                continue
             _test_fused_multi_head_attention_inference(
                 test_case,
                 2,
@@ -311,6 +407,84 @@ class TestFusedMultiHeadAttentionInference(flow.unittest.TestCase):
                 160,
                 flow.float16,
                 query_layout=query_layout,
+                key_layout=key_layout,
+                value_layout=value_layout,
+            )
+
+    def test_multi_head_attention_inference_with_output_layout(test_case):
+        layouts = [
+            "BM(HK)",
+            "MB(HK)",
+        ]
+        for output_layout in layouts:
+            _test_fused_multi_head_attention_inference(
+                test_case,
+                2,
+                8,
+                256,
+                256,
+                160,
+                160,
+                flow.float16,
+                output_layout=output_layout,
+            )
+            _test_fused_multi_head_attention_inference(
+                test_case,
+                1,
+                8,
+                256,
+                256,
+                160,
+                160,
+                flow.float16,
+                output_layout=output_layout,
+            )
+
+
+@unittest.skipIf(os.getenv("ONEFLOW_TEST_CPU_ONLY"), "only test cpu cases")
+@flow.unittest.skip_unless_1n1d()
+class TestFusedAttentionConcatPastKeyValue(flow.unittest.TestCase):
+    def test_fused_attention_concat_past_key_value(test_case):
+        kv_layouts = [
+            "BM(HK)",
+            "BMHK",
+            "MBHK",
+            "BHMK",
+            "MB(HK)",
+            "BM(H3K)",
+            # "BM(H2K)",
+            # "MB(H3K)",
+            "MB(H2K)",
+        ]
+
+        past_layouts = [
+            "BM(HK)",
+            "BMHK",
+            # "MBHK",
+            # "BHMK",
+            "MB(HK)",
+        ]
+
+        types = [flow.float16]
+        for (
+            past_key_layout,
+            past_value_layout,
+            key_layout,
+            value_layout,
+            dtype,
+        ) in itertools.product(
+            past_layouts, past_layouts, kv_layouts, kv_layouts, types
+        ):
+            _test_fused_attention_concat_past_key_value(
+                test_case,
+                dtype,
+                1,
+                127,
+                1,
+                40,
+                128,
+                past_key_layout=past_key_layout,
+                past_value_layout=past_value_layout,
                 key_layout=key_layout,
                 value_layout=value_layout,
             )
