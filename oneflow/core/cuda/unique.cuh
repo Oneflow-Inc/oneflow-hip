@@ -24,6 +24,7 @@ limitations under the License.
 #include <device_launch_parameters.h>
 #endif
 
+#include "oneflow/core/ep/include/gpu_macro.h"
 #include "oneflow/core/common/permutation_iterator.h"
 #include "oneflow/core/common/not_equal_to_previous_adjacent_iterator.h"
 

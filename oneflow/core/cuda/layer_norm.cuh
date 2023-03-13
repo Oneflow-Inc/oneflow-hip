@@ -26,6 +26,7 @@ limitations under the License.
 #endif
 
 #include <assert.h>
+#include "oneflow/core/ep/include/gpu_macro.h"
 
 namespace oneflow {
 

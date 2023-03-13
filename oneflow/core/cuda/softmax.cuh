@@ -26,7 +26,7 @@ limitations under the License.
 #include <math_constants.h>
 #endif
 #include <assert.h>
-
+#include "oneflow/core/ep/include/gpu_macro.h"
 #if CUDA_VERSION >= 11000
 #include <cuda_bf16.h>
 #endif  // CUDA_VERSION >= 11000
