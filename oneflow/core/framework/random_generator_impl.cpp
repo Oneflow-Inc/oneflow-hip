@@ -573,7 +573,7 @@ Maybe<CPUGeneratorImpl> MakeGeneratorImpl<CPUGeneratorImpl>(uint64_t seed, int d
   return std::make_shared<CPUGeneratorImpl>(seed);
 }
 
-#ifdef WITH_CUDA
+#if defined(WITH_CUDA) || defined(WITH_ROCM)
 
 template<>
 DeviceKey MakeDeviceKey<CUDAGeneratorImpl>(int device_index) {
@@ -591,25 +591,6 @@ Maybe<CUDAGeneratorImpl> MakeGeneratorImpl<CUDAGeneratorImpl>(uint64_t seed, int
   return std::make_shared<CUDAGeneratorImpl>(seed, device_index);
 }
 #endif  // WITH_CUDA
-
-#ifdef WITH_ROCM
-
-template<>
-DeviceKey MakeDeviceKey<CUDAGeneratorImpl>(int device_index) {
-  if (device_index == -1) { device_index = GetCudaDeviceIndex(); }
-  DeviceKey device_key;
-  device_key.device_type = DeviceType::kCUDA;
-  device_key.device_index = device_index;
-  return device_key;
-}
-
-template<>
-Maybe<CUDAGeneratorImpl> MakeGeneratorImpl<CUDAGeneratorImpl>(uint64_t seed, int device_index) {
-  CHECK_OR_RETURN(device_index >= 0 && device_index < GetCudaDeviceCount())
-      << "Invalid device index " << device_index;
-  return std::make_shared<CUDAGeneratorImpl>(seed, device_index);
-}
-#endif  // WITH_ROCM
 
 Maybe<GeneratorImpl> MakeGeneratorImpl(uint64_t seed, DeviceType device_type, int device_index) {
   std::shared_ptr<GeneratorImpl> impl;
@@ -618,18 +599,12 @@ Maybe<GeneratorImpl> MakeGeneratorImpl(uint64_t seed, DeviceType device_type, in
       impl = JUST(MakeGeneratorImpl<CPUGeneratorImpl>(seed, device_index));
       break;
     }
-#ifdef WITH_CUDA
+#if defined(WITH_CUDA) || defined(WITH_ROCM)
     case kCUDA: {
       impl = JUST(MakeGeneratorImpl<CUDAGeneratorImpl>(seed, device_index));
       break;
     }
 #endif  // WITH_CUDA
-#ifdef WITH_ROCM
-    case kCUDA: {
-      impl = JUST(MakeGeneratorImpl<CUDAGeneratorImpl>(seed, device_index));
-      break;
-    }
-#endif  // WITH_ROCM
     default:
       return Error::RuntimeError() << "Can not make generator for device type " << device_type;
   }

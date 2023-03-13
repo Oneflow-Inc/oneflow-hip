@@ -343,7 +343,8 @@ Maybe<void> CudaDevice::Alloc(const AllocationOptions& options, void** ptr, size
   if (err != hipSuccess) {
     if (err == hipErrorMemoryAllocation) {
       // NOTE:return out of memory error, so vm will try to shrink memory and rerun
-      return Error::OutOfMemoryError() << hipGetErrorString(err);
+      return Error::OutOfMemoryError()
+             << "CUDA " << cudaGetErrorString(err) << ". Tried to allocate " << FormatMemSize(size);
     }
     return Error::RuntimeError() << hipGetErrorString(err);
   } else {
