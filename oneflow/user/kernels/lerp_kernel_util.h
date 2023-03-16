@@ -48,7 +48,7 @@ struct ScalarLerpKernelUtil {
   SIGNED_INT_DATA_TYPE_SEQ     \
   UNSIGNED_INT_DATA_TYPE_SEQ
 
-#ifdef WITH_CUDA
+#if defined(WITH_CUDA) || defined(WITH_ROCM)
 #define LERP_DATA_TYPE_SEQ_CUDA \
   FLOATING_DATA_TYPE_SEQ        \
   SIGNED_INT_DATA_TYPE_SEQ      \

@@ -59,7 +59,7 @@ REGISTER_LERP_KERNEL(DeviceType::kCPU, uint8_t)
 REGISTER_LERP_KERNEL(DeviceType::kCPU, int8_t)
 REGISTER_LERP_KERNEL(DeviceType::kCPU, int32_t)
 REGISTER_LERP_KERNEL(DeviceType::kCPU, int64_t)
-#ifdef WITH_CUDA
+#if defined(WITH_CUDA) || defined(WITH_ROCM)
 REGISTER_LERP_KERNEL(DeviceType::kCUDA, half)
 REGISTER_LERP_KERNEL(DeviceType::kCUDA, float)
 REGISTER_LERP_KERNEL(DeviceType::kCUDA, double)
@@ -116,7 +116,7 @@ class LerpGradKernel final : public user_op::OpKernel {
 
 REGISTER_LERP_GRAD_KERNEL(DeviceType::kCPU, float)
 REGISTER_LERP_GRAD_KERNEL(DeviceType::kCPU, double)
-#ifdef WITH_CUDA
+#if defined(WITH_CUDA) || defined(WITH_ROCM)
 REGISTER_LERP_GRAD_KERNEL(DeviceType::kCUDA, half)
 REGISTER_LERP_GRAD_KERNEL(DeviceType::kCUDA, float)
 REGISTER_LERP_GRAD_KERNEL(DeviceType::kCUDA, double)
@@ -168,7 +168,7 @@ REGISTER_SCALAR_LERP_KERNEL(DeviceType::kCPU, double, double)
 REGISTER_SCALAR_LERP_KERNEL(DeviceType::kCPU, int8_t, int64_t)
 REGISTER_SCALAR_LERP_KERNEL(DeviceType::kCPU, int32_t, int64_t)
 REGISTER_SCALAR_LERP_KERNEL(DeviceType::kCPU, int64_t, int64_t)
-#ifdef WITH_CUDA
+#if defined(WITH_CUDA) || defined(WITH_ROCM)
 REGISTER_SCALAR_LERP_KERNEL(DeviceType::kCUDA, half, double)
 REGISTER_SCALAR_LERP_KERNEL(DeviceType::kCUDA, float, double)
 REGISTER_SCALAR_LERP_KERNEL(DeviceType::kCUDA, double, double)
@@ -226,7 +226,7 @@ class ScalarLerpGradKernel final : public user_op::OpKernel {
 
 REGISTER_SCALAR_LERP_GRAD_KERNEL(DeviceType::kCPU, float, double)
 REGISTER_SCALAR_LERP_GRAD_KERNEL(DeviceType::kCPU, double, double)
-#ifdef WITH_CUDA
+#if defined(WITH_CUDA) || defined(WITH_ROCM)
 REGISTER_SCALAR_LERP_GRAD_KERNEL(DeviceType::kCUDA, half, double)
 REGISTER_SCALAR_LERP_GRAD_KERNEL(DeviceType::kCUDA, float, double)
 REGISTER_SCALAR_LERP_GRAD_KERNEL(DeviceType::kCUDA, double, double)
