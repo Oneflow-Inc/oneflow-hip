@@ -26,6 +26,7 @@ limitations under the License.
 #endif
 #include "oneflow/core/common/bfloat16.h"
 #include <half.hpp>
+#include <complex>
 
 namespace std {
 
@@ -117,14 +118,15 @@ struct IsScalarType final {
 };
 
 template<typename T>
-struct IsScalarType<T,
-                    typename std::enable_if<
-                        std::is_same<bfloat16, typename std::remove_cv<T>::type>::value
-                        || std::is_same<half_float::half, typename std::remove_cv<T>::type>::value
+struct IsScalarType<
+    T, typename std::enable_if<
+           std::is_same<bfloat16, typename std::remove_cv<T>::type>::value
+           || std::is_same<half_float::half, typename std::remove_cv<T>::type>::value
 #if defined(WITH_CUDA) || defined(WITH_ROCM)
-                        || std::is_same<half, typename std::remove_cv<T>::type>::value
+           || std::is_same<half, typename std::remove_cv<T>::type>::value
 #endif  // WITH_CUDA
-                        >::type>
+           || std::is_same<std::complex<float>, typename std::remove_cv<T>::type>::value
+           || std::is_same<std::complex<double>, typename std::remove_cv<T>::type>::value>::type>
     final {
   static const bool value = true;
 };
