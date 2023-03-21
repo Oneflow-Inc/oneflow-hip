@@ -274,7 +274,11 @@ user_op::DataTypeInferFn MakeFwDataTypeInferFn() {
       CHECK_EQ_OR_RETURN(reserve_space_bits % split_num, 0);
       reserve_space_bits = reserve_space_bits / split_num;
     }
+#ifdef WITH_ROCM
+    reserve_space->set_shape(Shape({static_cast<int64_t>(reserve_space_bits)}));
+#else
     reserve_space->set_shape(Shape({static_cast<int64_t>(RoundUp(reserve_space_bits, 32) / 32)}));
+#endif
     return Maybe<void>::Ok();
   })(ctx);
 }
@@ -284,8 +288,12 @@ user_op::DataTypeInferFn MakeFwDataTypeInferFn() {
   return MakeFwTensorDescInferFn([](user_op::InferContext* ctx, const user_op::TensorDesc* x,
                                     user_op::TensorDesc* reserve_space) -> Maybe<void> {
     const auto& x_desc = ctx->InputTensorDesc("x", 0);
+#ifdef WITH_ROCM
+    reserve_space->set_shape(Shape({static_cast<int64_t>(x_desc.shape().elem_cnt())}));
+#else
     reserve_space->set_shape(
         Shape({static_cast<int64_t>(RoundUp(x_desc.shape().elem_cnt(), 32) / 32)}));
+#endif
     return Maybe<void>::Ok();
   })(ctx);
 }
