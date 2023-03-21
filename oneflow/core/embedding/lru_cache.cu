@@ -252,15 +252,21 @@ struct SetContext {
     const int lane_age = ages[thread_ctx.lane_id];
     const bool lane_hit = (lane_key == key && lane_age != 0);
 #ifdef WITH_ROCM
-    const unsigned hit_mask = __ballot(lane_hit);
+    const unsigned long long int hit_mask = __ballot(lane_hit);
+    if (hit_mask != 0) {
+      return __ffsll(static_cast<unsigned long long int>(hit_mask)) - 1;
+    } else {
+      return -1;
+    }
 #else
     const unsigned hit_mask = __ballot_sync(kFullMask, lane_hit);
-#endif
     if (hit_mask != 0) {
       return __ffs(static_cast<int>(hit_mask)) - 1;
     } else {
       return -1;
     }
+#endif
+    
   }
 
   __device__ void Read(const LruCacheContext<Key, Elem>& cache_ctx, const ThreadContext& thread_ctx,
@@ -277,15 +283,16 @@ struct SetContext {
     const Key lane_key = keys[thread_ctx.lane_id];
     int lane_age = ages[thread_ctx.lane_id];
 #ifdef WITH_ROCM
-    const unsigned hit_mask = __ballot(lane_key == key && lane_age != 0);
+    const unsigned long long int hit_mask = __ballot(lane_key == key && lane_age != 0);
 #else
     const unsigned hit_mask = __ballot_sync(kFullMask, lane_key == key && lane_age != 0);
 #endif
     if (hit_mask != 0) {
-      insert_way = __ffs(static_cast<int>(hit_mask)) - 1;
 #ifdef WITH_ROCM
+      insert_way = __ffsll(static_cast<unsigned long long int>(hit_mask)) - 1;
       const int insert_way_age = __shfl(lane_age, insert_way);
 #else
+      insert_way = __ffs(static_cast<int>(hit_mask)) - 1;
       const int insert_way_age = __shfl_sync(kFullMask, lane_age, insert_way);
 #endif
       if (lane_age > insert_way_age) {
@@ -301,12 +308,16 @@ __syncwarp();
     }
     if (insert_way == -1) {
 #ifdef WITH_ROCM
-    const unsigned valid_mask = __ballot(lane_age != 0);
+    const unsigned long long int valid_mask = __ballot(lane_age != 0);
 #else
     const unsigned valid_mask = __ballot_sync(kFullMask, lane_age != 0);
 #endif
       if (valid_mask != kFullMask) {
+#ifdef WITH_ROCM
+        insert_way = __popcll(static_cast<unsigned long long int>(valid_mask));
+#else
         insert_way = __popc(static_cast<int>(valid_mask));
+#endif
         if (lane_age > 0) {
           lane_age -= 1;
         } else if (thread_ctx.lane_id == insert_way) {
@@ -329,7 +340,8 @@ __syncwarp();
     const Key lane_key = keys[thread_ctx.lane_id];
     int lane_age = ages[thread_ctx.lane_id];
 #ifdef WITH_ROCM
-    const int insert_way = __ffs(static_cast<int>(__ballot(lane_age == 1))) - 1;
+    unsigned long long int valid_mask_tmp = __ballot(lane_age == 1);
+    const int insert_way = __ffsll(valid_mask_tmp) - 1;
 #else
     const int insert_way = __ffs(__ballot_sync(kFullMask, lane_age == 1)) - 1;
 #endif
@@ -594,7 +606,8 @@ __syncwarp();
     warp_keys[thread_ctx.warp_id_in_block][thread_ctx.lane_id] = lane_key;
     warp_ages[thread_ctx.warp_id_in_block][thread_ctx.lane_id] = lane_age;
 #ifdef WITH_ROCM
-    const int key_count = __popc(static_cast<int>(__ballot(lane_age != 0)));
+    unsigned long long int valid_mask_tmp = __ballot(lane_age != 0);
+    const int key_count = __popcll(valid_mask_tmp);
 #else
     const int key_count = __popc(__ballot_sync(kFullMask, lane_age != 0));
 #endif
