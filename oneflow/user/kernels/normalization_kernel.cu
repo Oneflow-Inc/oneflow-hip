@@ -882,6 +882,22 @@ namespace oneflow {
 
 namespace {
 
+template<typename T>
+void printTensor(const std::string& str, const T* devTensor, size_t size) {
+  T* hostTensor;
+  hostTensor = (T*)malloc(size * sizeof(T));
+  hipMemcpy(hostTensor, devTensor, size * sizeof(T), hipMemcpyDeviceToHost);
+  std::cout << str << ": ";
+  for(int i; i<size; i++) {
+    if (i % 16 == 0) {
+      std::cout << std::endl;
+    }
+    std::cout << hostTensor[i] << ", ";
+  }
+  std::cout << str << ": finish" << std::endl;
+  free(hostTensor);
+}
+
 hipdnnBatchNormMode_t getCudnnBatchNormMode(const int64_t dim) {
   if (dim == 2) {
     return HIPDNN_BATCHNORM_PER_ACTIVATION;
@@ -1094,27 +1110,31 @@ constexpr int64_t kCudaWarpSize = 64;
 
 template<typename T>
 __global__ void ReluGpu(int64_t n, const T* x, T* y, int32_t* mask) {
-  const int32_t lane_id = threadIdx.x % kCudaWarpSize;
-  const T zero = static_cast<T>(0.f);
+  // const int32_t lane_id = threadIdx.x % kCudaWarpSize;
+  // const T zero = static_cast<T>(0.f);
+  const int32_t zero = 0;
   CUDA_1D_KERNEL_LOOP(i, n) {
     const T x_val = x[i];
-    const bool is_positive = (x_val > zero);
-    int32_t warp_mask = __ballot(static_cast<int>(is_positive));
-    if (lane_id == 0) { mask[i / kCudaWarpSize] = warp_mask; }
-    y[i] = is_positive ? x_val : zero;
+    const bool is_positive = (x_val > static_cast<T>(zero));
+    // int32_t warp_mask = __ballot_sync(__activemask(), static_cast<int>(is_positive));
+    // if (lane_id == 0) { mask[i / kCudaWarpSize] = warp_mask; }
+    mask[i] = is_positive ? static_cast<int32_t>(is_positive) : zero;
+    y[i] = is_positive ? x_val : static_cast<T>(zero);
   }
 }
 
 template<typename T>
 __global__ void AddReluGpu(int64_t n, const T* x, const T* addend, T* y, int32_t* mask) {
-  const int32_t lane_id = threadIdx.x % kCudaWarpSize;
-  const T zero = static_cast<T>(0.f);
+  // const int32_t lane_id = threadIdx.x % kCudaWarpSize;
+  // const T zero = static_cast<T>(0.f);
+  const int32_t zero = 0;
   CUDA_1D_KERNEL_LOOP(i, n) {
     const T sum = x[i] + addend[i];
-    const bool is_positive = (sum > zero);
-    int32_t warp_mask = __ballot(static_cast<int>(is_positive));
-    if (lane_id == 0) { mask[i / kCudaWarpSize] = warp_mask; }
-    y[i] = is_positive ? sum : zero;
+    const bool is_positive = (sum > static_cast<T>(zero));
+    // int32_t warp_mask = __ballot_sync(__activemask(), static_cast<int>(is_positive));
+    // if (lane_id == 0) { mask[i / kCudaWarpSize] = warp_mask; }
+    mask[i] = is_positive ? static_cast<int32_t>(is_positive) : zero;
+    y[i] = is_positive ? sum : static_cast<T>(zero);
   }
 }
 
@@ -1132,10 +1152,12 @@ void AddRelu(ep::Stream* stream, int64_t n, const T* x, const T* addend, T* y, i
 
 template<typename T>
 __global__ void ReluBackwardGpu(int64_t n, const int32_t* mask, const T* dy, T* addend_diff) {
-  int32_t lane_id = threadIdx.x % kCudaWarpSize;
+  // int32_t lane_id = threadIdx.x % kCudaWarpSize;
   CUDA_1D_KERNEL_LOOP(i, n) {
-    int32_t mask_val = mask[i / kCudaWarpSize];
-    bool is_positive = mask_val & (1 << lane_id);
+    // int32_t mask_val = mask[i / kCudaWarpSize];
+    int32_t mask_val = mask[i];
+    // bool is_positive = mask_val & (1 << lane_id);
+    bool is_positive = mask_val;
     addend_diff[i] = static_cast<T>(is_positive) * dy[i];
   }
 }
