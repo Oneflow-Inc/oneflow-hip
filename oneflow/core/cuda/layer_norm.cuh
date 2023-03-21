@@ -308,6 +308,21 @@ __inline__ __device__ void WelfordBlockAllReduce(T thread_mean, T thread_m2, T t
     count_shared[wid] = warp_count;
   }
   __syncthreads();
+
+#ifdef WITH_ROCM
+  if (threadIdx.x < blockDim.x / kWarpSize) {
+    warp_mean = mean_shared[lid];
+    warp_m2 = m2_shared[lid];
+    warp_count = count_shared[lid];
+  } else {
+    warp_mean = static_cast<T>(0);
+    warp_m2 = static_cast<T>(0);
+    warp_count = static_cast<T>(0);
+  }
+  __syncthreads();
+
+  if (wid == 0) {
+#else
   if (wid == 0) {
     if (threadIdx.x < blockDim.x / kWarpSize) {
       warp_mean = mean_shared[lid];
@@ -318,10 +333,7 @@ __inline__ __device__ void WelfordBlockAllReduce(T thread_mean, T thread_m2, T t
       warp_m2 = static_cast<T>(0);
       warp_count = static_cast<T>(0);
     }
-    #ifdef WITH_ROCM
-__syncthreads();
-#else
-__syncwarp();
+  __syncwarp();
 #endif
     T block_mean = 0;
     T block_m2 = 0;
@@ -445,7 +457,11 @@ inline GPU(Error_t) LaunchLayerNormWarpImpl(GPU(Stream_t) stream, LOAD load, STO
                                            const double epsilon, ComputeType* mean,
                                            ComputeType* inv_variance) {
   constexpr int block_size = 128;
+#ifdef WITH_ROCM 
+  constexpr int waves = 64;
+#else
   constexpr int waves = 32;
+#endif
   static_assert(block_size % thread_group_width == 0, "");
   constexpr int thread_groups_per_block = block_size / thread_group_width;
   dim3 block_dim(thread_group_width, thread_groups_per_block);
@@ -502,10 +518,16 @@ typename std::enable_if<pack_size == 1, GPU(Error_t)>::type DispatchLayerNormWar
           stream, load, store, rows, cols, epsilon, mean, inv_variance);                         \
     }                                                                                            \
   }
+
+#ifdef WITH_ROCM
+  DEFINE_ONE_ELIF(64)
+#else
   DEFINE_ONE_ELIF(4)
   DEFINE_ONE_ELIF(8)
   DEFINE_ONE_ELIF(16)
   DEFINE_ONE_ELIF(32)
+#endif
+
 #undef DEFINE_ONE_ELIF
 #define DEFINE_ONE_ELIF(max_col, min_col)                                                          \
   else if (cols <= (max_col)*kWarpSize) {                                                          \
@@ -545,10 +567,16 @@ typename std::enable_if<pack_size == 2, GPU(Error_t)>::type DispatchLayerNormWar
           stream, load, store, rows, cols, epsilon, mean, inv_variance);                         \
     }                                                                                            \
   }
+
+#ifdef WITH_ROCM
+  DEFINE_ONE_ELIF(64)
+#else
   DEFINE_ONE_ELIF(4)
   DEFINE_ONE_ELIF(8)
   DEFINE_ONE_ELIF(16)
   DEFINE_ONE_ELIF(32)
+#endif
+
 #undef DEFINE_ONE_ELIF
 #define DEFINE_ONE_ELIF(max_col, min_col)                                                          \
   else if ((cols <= (max_col)*kWarpSize) && (cols > (min_col)*kWarpSize)) {                        \
@@ -869,7 +897,11 @@ inline GPU(Error_t) LaunchLayerNormBlockUncachedImpl(GPU(Stream_t) stream, LOAD 
                                                     const double epsilon, ComputeType* mean,
                                                     ComputeType* inv_variance) {
   constexpr int block_size = 1024;
+#ifdef WITH_ROCM 
+  constexpr int waves = 64;
+#else
   constexpr int waves = 32;
+#endif
   int grid_dim_x;
   {
     GPU(Error_t) err =
@@ -1080,7 +1112,11 @@ inline GPU(Error_t) LaunchLayerNormGradWarpImpl(GPU(Stream_t) stream, LOAD_X loa
                                                const ComputeType* inv_variance, const int64_t rows,
                                                const int64_t cols) {
   constexpr int block_size = 128;
+#ifdef WITH_ROCM 
+  constexpr int waves = 64;
+#else
   constexpr int waves = 32;
+#endif
   static_assert(block_size % thread_group_width == 0, "");
   constexpr int thread_groups_per_block = block_size / thread_group_width;
   dim3 block_dim(thread_group_width, thread_groups_per_block);
@@ -1144,10 +1180,16 @@ typename std::enable_if<pack_size == 1, GPU(Error_t)>::type DispatchLayerNormGra
           stream, load_x, load_scaled_dy, store, mean, inv_variance, rows, cols);                  \
     }                                                                                              \
   }
+
+#ifdef WITH_ROCM
+  DEFINE_ONE_ELIF(64)
+#else
   DEFINE_ONE_ELIF(4)
   DEFINE_ONE_ELIF(8)
   DEFINE_ONE_ELIF(16)
   DEFINE_ONE_ELIF(32)
+#endif
+
 #undef DEFINE_ONE_ELIF
 #define DEFINE_ONE_ELIF(max_col, min_col)                                                   \
   else if (cols <= (max_col)*kWarpSize) {                                                   \

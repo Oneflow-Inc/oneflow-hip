@@ -499,7 +499,11 @@ REGISTER_GROUP_NORM_GRAD_CUDA_KERNEL(nv_bfloat16)
 
 constexpr int kReduceBlockSize = 512;
 constexpr int kBlockSize = 128;
+#ifdef WITH_ROCM
+constexpr int kNumWaves = 64;
+#else
 constexpr int kNumWaves = 32;
+#endif
 
 inline GPU(Error_t) GetReduceNumBlocks(int64_t n, int* num_blocks) {
   int dev;
