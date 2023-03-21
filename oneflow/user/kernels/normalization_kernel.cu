@@ -1162,20 +1162,20 @@ __global__ void ReluBackwardGpu(int64_t n, const int32_t* mask, const T* dy, T* 
   }
 }
 
-#if CUDA_VERSION >= 11000
+// #if CUDA_VERSION >= 11000
 
-template<>
-__global__ void ReluBackwardGpu<nv_bfloat16>(int64_t n, const int32_t* mask, const nv_bfloat16* dy,
-                                             nv_bfloat16* addend_diff) {
-  int32_t lane_id = threadIdx.x % kCudaWarpSize;
-  CUDA_1D_KERNEL_LOOP(i, n) {
-    int32_t mask_val = mask[i / kCudaWarpSize];
-    bool is_positive = mask_val & (1 << lane_id);
-    addend_diff[i] = static_cast<nv_bfloat16>(static_cast<float>(is_positive)) * dy[i];
-  }
-}
+// template<>
+// __global__ void ReluBackwardGpu<nv_bfloat16>(int64_t n, const int32_t* mask, const nv_bfloat16* dy,
+//                                              nv_bfloat16* addend_diff) {
+//   int32_t lane_id = threadIdx.x % kCudaWarpSize;
+//   CUDA_1D_KERNEL_LOOP(i, n) {
+//     int32_t mask_val = mask[i / kCudaWarpSize];
+//     bool is_positive = mask_val & (1 << lane_id);
+//     addend_diff[i] = static_cast<nv_bfloat16>(static_cast<float>(is_positive)) * dy[i];
+//   }
+// }
 
-#endif
+// #endif
 
 template<typename T>
 void ReluBackward(ep::Stream* stream, int64_t n, const int32_t* mask, const T* dy, T* addend_diff) {
