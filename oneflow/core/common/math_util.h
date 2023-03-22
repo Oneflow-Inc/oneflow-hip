@@ -27,7 +27,7 @@ int64_t Lcm(int64_t m, int64_t n);
 
 template<typename T>
 OF_DEVICE_FUNC T DeviceMin(T a, T b) {
-#if defined(__CUDA_ARCH__)
+#if defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__)
   return a < b ? a : b;
 #else
   return std::min(a, b);
@@ -36,7 +36,7 @@ OF_DEVICE_FUNC T DeviceMin(T a, T b) {
 
 template<typename T>
 OF_DEVICE_FUNC T DeviceMax(T a, T b) {
-#if defined(__CUDA_ARCH__)
+#if defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__)
   return a > b ? a : b;
 #else
   return std::max(a, b);
