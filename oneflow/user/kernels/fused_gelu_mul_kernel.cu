@@ -67,7 +67,7 @@ struct FusedFastGeluMulFunctor<half> {
 #endif  // (__CUDA_ARCH__ >= 750 && CUDA_VERSION >= 11000)
   }
 
-#if (__CUDA_ARCH__ >= 750 && CUDA_VERSION >= 11000)
+#if (__CUDA_ARCH__ >= 750 && CUDA_VERSION >= 11000) || defined(WITH_ROCM)
   __device__ void Apply2(half* y, const half* x, const half* m) const {
     const half2 x2 = *(reinterpret_cast<const half2*>(x));
     const float2 tanh_in = __half22float2(
@@ -193,7 +193,7 @@ struct FusedFastGeluMulGradFunctor<half> {
 #endif  // (__CUDA_ARCH__ >= 750 && CUDA_VERSION >= 11000)
   }
 
-#if (__CUDA_ARCH__ >= 750 && CUDA_VERSION >= 11000)
+#if (__CUDA_ARCH__ >= 750 && CUDA_VERSION >= 11000) || defined(WITH_ROCM)
   __device__ void Apply2(half* x_diff, half* m_diff, const half* dy, const half* x,
                          const half* m) const {
     const half2 dy2 = *(reinterpret_cast<const half2*>(dy));
