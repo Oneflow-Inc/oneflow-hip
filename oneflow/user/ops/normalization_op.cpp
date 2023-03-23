@@ -275,7 +275,7 @@ user_op::DataTypeInferFn MakeFwDataTypeInferFn() {
       reserve_space_bits = reserve_space_bits / split_num;
     }
 #ifdef WITH_ROCM
-    reserve_space->set_shape(Shape({static_cast<int64_t>(reserve_space_bits)}));
+    reserve_space->set_shape(Shape({static_cast<int64_t>(RoundUp(reserve_space_bits, 64) / 64)}));
 #else
     reserve_space->set_shape(Shape({static_cast<int64_t>(RoundUp(reserve_space_bits, 32) / 32)}));
 #endif
@@ -290,7 +290,7 @@ user_op::DataTypeInferFn MakeFwDataTypeInferFn() {
     const auto& x_desc = ctx->InputTensorDesc("x", 0);
 #ifdef WITH_ROCM
     reserve_space->set_shape(
-        Shape({static_cast<int64_t>(x_desc.shape().elem_cnt())}));
+        Shape({static_cast<int64_t>(RoundUp(x_desc.shape().elem_cnt(), 64) / 64)}));
 #else
     reserve_space->set_shape(
         Shape({static_cast<int64_t>(RoundUp(x_desc.shape().elem_cnt(), 32) / 32)}));
@@ -311,7 +311,11 @@ user_op::DataTypeInferFn MakeFwDataTypeInferFn() {
 /* static */ Maybe<void> NormalizationAddReluOp::InferDataType(user_op::InferContext* ctx) {
   return MakeFwDataTypeInferFn([](user_op::InferContext* ctx, const user_op::TensorDesc* x,
                                   user_op::TensorDesc* reserve_space) -> Maybe<void> {
+#ifdef WITH_ROCM
+    reserve_space->set_data_type(DataType::kInt64);
+#else
     reserve_space->set_data_type(DataType::kInt32);
+#endif
     return Maybe<void>::Ok();
   })(ctx);
 }
