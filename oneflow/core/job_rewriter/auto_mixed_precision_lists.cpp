@@ -65,6 +65,7 @@ const AMPList& AutoMixedPrecisionLists::BlackList() {
                                "layer_norm_grad",
                                "layer_norm", 
                                "layer_norm_param_grad",
+                               "skip_layer_norm",
 
                                "add_n",                                                                               
                                "tf_avg_pool_1d",
