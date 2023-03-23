@@ -1109,55 +1109,51 @@ REGISTER_USER_KERNEL("normalization")
 constexpr int64_t kCudaWarpSize = 64;
 
 template<typename T>
-__global__ void ReluGpu(int64_t n, const T* x, T* y, int32_t* mask) {
-  // const int32_t lane_id = threadIdx.x % kCudaWarpSize;
-  // const T zero = static_cast<T>(0.f);
-  const int32_t zero = 0;
+__global__ void ReluGpu(int64_t n, const T* x, T* y, int64_t* mask) {
+  const int32_t lane_id = threadIdx.x % kCudaWarpSize;
+  const T zero = static_cast<T>(0.f);
   CUDA_1D_KERNEL_LOOP(i, n) {
     const T x_val = x[i];
-    const bool is_positive = (x_val > static_cast<T>(zero));
-    // int32_t warp_mask = __ballot_sync(__activemask(), static_cast<int>(is_positive));
-    // if (lane_id == 0) { mask[i / kCudaWarpSize] = warp_mask; }
-    mask[i] = is_positive ? static_cast<int32_t>(is_positive) : zero;
-    y[i] = is_positive ? x_val : static_cast<T>(zero);
+    const bool is_positive = (x_val > zero);
+    unsigned long long int warp_mask_tmp = __ballot(static_cast<int>(is_positive));
+    int64_t* warp_mask = reinterpret_cast<int64_t*>(&warp_mask_tmp);
+    if (lane_id == 0) { mask[i / kCudaWarpSize] = *warp_mask; }
+    y[i] = is_positive ? x_val : zero;
   }
 }
 
 template<typename T>
-__global__ void AddReluGpu(int64_t n, const T* x, const T* addend, T* y, int32_t* mask) {
-  // const int32_t lane_id = threadIdx.x % kCudaWarpSize;
-  // const T zero = static_cast<T>(0.f);
-  const int32_t zero = 0;
+__global__ void AddReluGpu(int64_t n, const T* x, const T* addend, T* y, int64_t* mask) {
+  const int32_t lane_id = threadIdx.x % kCudaWarpSize;
+  const T zero = static_cast<T>(0.f);
   CUDA_1D_KERNEL_LOOP(i, n) {
     const T sum = x[i] + addend[i];
-    const bool is_positive = (sum > static_cast<T>(zero));
-    // int32_t warp_mask = __ballot_sync(__activemask(), static_cast<int>(is_positive));
-    // if (lane_id == 0) { mask[i / kCudaWarpSize] = warp_mask; }
-    mask[i] = is_positive ? static_cast<int32_t>(is_positive) : zero;
-    y[i] = is_positive ? sum : static_cast<T>(zero);
+    const bool is_positive = (sum > zero);
+    unsigned long long int warp_mask_tmp = __ballot(static_cast<int>(is_positive));
+    int64_t* warp_mask = reinterpret_cast<int64_t*>(&warp_mask_tmp);
+    if (lane_id == 0) { mask[i / kCudaWarpSize] = *warp_mask; }
+    y[i] = is_positive ? sum : zero;
   }
 }
 
 template<typename T>
-void Relu(ep::Stream* stream, int64_t n, const T* x, T* y, int32_t* mask) {
+void Relu(ep::Stream* stream, int64_t n, const T* x, T* y, int64_t* mask) {
   ReluGpu<T><<<BlocksNum4ThreadsNum(n), kCudaThreadsNumPerBlock, 0,
                stream->As<ep::CudaStream>()->cuda_stream()>>>(n, x, y, mask);
 }
 
 template<typename T>
-void AddRelu(ep::Stream* stream, int64_t n, const T* x, const T* addend, T* y, int32_t* mask) {
+void AddRelu(ep::Stream* stream, int64_t n, const T* x, const T* addend, T* y, int64_t* mask) {
   AddReluGpu<T><<<BlocksNum4ThreadsNum(n), kCudaThreadsNumPerBlock, 0,
                   stream->As<ep::CudaStream>()->cuda_stream()>>>(n, x, addend, y, mask);
 }
 
 template<typename T>
-__global__ void ReluBackwardGpu(int64_t n, const int32_t* mask, const T* dy, T* addend_diff) {
-  // int32_t lane_id = threadIdx.x % kCudaWarpSize;
+__global__ void ReluBackwardGpu(int64_t n, const int64_t* mask, const T* dy, T* addend_diff) {
+  int64_t lane_id = threadIdx.x % kCudaWarpSize;
   CUDA_1D_KERNEL_LOOP(i, n) {
-    // int32_t mask_val = mask[i / kCudaWarpSize];
-    int32_t mask_val = mask[i];
-    // bool is_positive = mask_val & (1 << lane_id);
-    bool is_positive = mask_val;
+    int64_t mask_val = mask[i / kCudaWarpSize];
+    bool is_positive = mask_val & ((int64_t)1 << lane_id);
     addend_diff[i] = static_cast<T>(is_positive) * dy[i];
   }
 }
@@ -1178,13 +1174,13 @@ __global__ void ReluBackwardGpu(int64_t n, const int32_t* mask, const T* dy, T* 
 // #endif
 
 template<typename T>
-void ReluBackward(ep::Stream* stream, int64_t n, const int32_t* mask, const T* dy, T* addend_diff) {
+void ReluBackward(ep::Stream* stream, int64_t n, const int64_t* mask, const T* dy, T* addend_diff) {
   ReluBackwardGpu<T><<<BlocksNum4ThreadsNum(n), kCudaThreadsNumPerBlock, 0,
                        stream->As<ep::CudaStream>()->cuda_stream()>>>(n, mask, dy, addend_diff);
 }
 
 void Relu(ep::Stream* stream, int64_t n, const DataType data_type, const void* x, void* y,
-          int32_t* mask) {
+          int64_t* mask) {
   if (data_type == kFloat) {
     Relu<float>(stream, n, reinterpret_cast<const float*>(x), reinterpret_cast<float*>(y), mask);
   } else if (data_type == kDouble) {
@@ -1203,7 +1199,7 @@ void Relu(ep::Stream* stream, int64_t n, const DataType data_type, const void* x
   }
 }
 void AddRelu(ep::Stream* stream, int64_t n, const DataType data_type, const void* x,
-             const void* addend, void* y, int32_t* mask) {
+             const void* addend, void* y, int64_t* mask) {
   if (data_type == kFloat) {
     AddRelu<float>(stream, n, reinterpret_cast<const float*>(x),
                    reinterpret_cast<const float*>(addend), reinterpret_cast<float*>(y), mask);
@@ -1225,7 +1221,7 @@ void AddRelu(ep::Stream* stream, int64_t n, const DataType data_type, const void
     UNIMPLEMENTED();
   }
 }
-void ReluBackward(ep::Stream* stream, int64_t n, const DataType data_type, const int32_t* mask,
+void ReluBackward(ep::Stream* stream, int64_t n, const DataType data_type, const int64_t* mask,
                   const void* dy, void* addend_diff) {
   if (data_type == kFloat) {
     ReluBackward<float>(stream, n, mask, reinterpret_cast<const float*>(dy),
@@ -1320,19 +1316,18 @@ class NormalizationTrainKernel final : public user_op::OpKernel, public user_op:
                                     add_to_output_dev, sp_beta, desc_helper.xy_desc(),
                                     y->mut_dptr()));
     }
-    
+
     if (ctx->op_type_name() == "normalization_add_relu") {
       CHECK(!ctx->has_input("_add_to_output", 0));
       const int64_t elem_cnt = x->shape_view().elem_cnt();
       auto* mask = ctx->Tensor4ArgNameAndIndex("reserve_space", 0);
-
       if (ctx->has_input("addend", 0)) {
         const auto* addend = ctx->Tensor4ArgNameAndIndex("addend", 0);
         AddRelu(ctx->stream(), elem_cnt, data_type, y->dptr(), addend->dptr(), y->mut_dptr(),
-                mask->mut_dptr<int32_t>());
+                mask->mut_dptr<int64_t>());
       } else {
         Relu(ctx->stream(), elem_cnt, data_type, y->dptr(), y->mut_dptr(),
-             mask->mut_dptr<int32_t>());
+             mask->mut_dptr<int64_t>());
       }
     }
   }
@@ -1408,7 +1403,7 @@ class NormalizationGradUserKernel final : public user_op::OpKernel,
       user_op::Tensor* y = ctx->Tensor4ArgNameAndIndex("y", 0);
       if (ctx->has_output("addend_diff", 0)) {
         user_op::Tensor* addend_diff = ctx->Tensor4ArgNameAndIndex("addend_diff", 0);
-        ReluBackward(ctx->stream(), elem_cnt, data_type, mask->dptr<int32_t>(), dy->dptr(),
+        ReluBackward(ctx->stream(), elem_cnt, data_type, mask->dptr<int64_t>(), dy->dptr(),
                      addend_diff->mut_dptr());
         bn_workspace_ptr = tmp_buffer->mut_dptr();
         bn_workspace_size = tmp_buffer->shape_view().elem_cnt();
@@ -1418,17 +1413,11 @@ class NormalizationGradUserKernel final : public user_op::OpKernel,
         const size_t relu_dx_size =
             GetCudaAlignedSize(dy->shape_view().elem_cnt() * GetSizeOfDataType(data_type));
         CHECK_GE(tmp_buffer_size, relu_dx_size);
-
-        // std::cout << "ReluBackward func input: " << std::endl;
-        // printTensor<float>("dy->dptr()", (const float*)dy->dptr(), dy->shape_view().elem_cnt());
-
-        ReluBackward(ctx->stream(), elem_cnt, data_type, mask->dptr<int32_t>(), dy->dptr(),
+        ReluBackward(ctx->stream(), elem_cnt, data_type, mask->dptr<int64_t>(), dy->dptr(),
                      tmp_buffer->mut_dptr());
-    
         bn_workspace_ptr = tmp_buffer->mut_dptr<char>() + relu_dx_size;
         bn_workspace_size = tmp_buffer_size - relu_dx_size;
         bn_dy_ptr = tmp_buffer->dptr();
-
       }
     } else {
       UNIMPLEMENTED();
