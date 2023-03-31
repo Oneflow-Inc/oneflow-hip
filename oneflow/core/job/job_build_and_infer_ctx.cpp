@@ -983,9 +983,7 @@ Maybe<void> LazyJobBuildAndInferCtx::Complete() {
     // the autograd engine for those tensors that have no gradients
     JUST(DoPass("EliminateDeadNodesPass"));
     JUST(DoPass("NormalizationExponentialAverageAutoTickPass"));
-#if defined(WITH_CUDA) || defined(WITH_ROCM)
     JUST(DoPass("AutoMixedPrecision"));
-#endif
     // prune depend OP and and add ctrl_in_op to op_conf accordingly
     // to express the same semantics and avoid performance loss
     JUST(DoPass("PruneDependOpPass"));
