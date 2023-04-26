@@ -217,6 +217,8 @@ void EagerNcclCommMgr::CreateCommFromPlan(const Plan& plan) {
   }
 }
 
+REGISTER_CCL_COMM_MGR(DeviceType::kCUDA, EagerNcclCommMgr);
+
 }  // namespace oneflow
 
 #endif  // WITH_CUDA
@@ -414,6 +416,8 @@ void EagerNcclCommMgr::CreateCommFromPlan(const Plan& plan) {
     device7stream2device_id2comm_[key][dev] = comm;
   }
 }
+
+REGISTER_CCL_COMM_MGR(DeviceType::kCUDA, EagerNcclCommMgr);
 
 }  // namespace oneflow
 

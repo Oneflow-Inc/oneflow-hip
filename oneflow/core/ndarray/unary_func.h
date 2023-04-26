@@ -118,6 +118,32 @@ struct UnaryFuncExp<half> final {
     return __float2half(std::exp(__half2float(x)));
   }
 };
+
+template<>
+struct UnaryFuncNegative<cuComplex> final {
+  static __device__ __forceinline__ const cuComplex Invoke(const cuComplex x) {
+    return cuComplex{-x.x, -x.y};
+  }
+};
+template<>
+struct UnaryFuncExp<cuComplex> final {
+  static __device__ __forceinline__ const cuComplex Invoke(const cuComplex x) {
+    return cuComplex{exp(x.x) * cos(x.y), exp(x.x) * sin(x.y)};
+  }
+};
+
+template<>
+struct UnaryFuncNegative<cuDoubleComplex> final {
+  static __device__ __forceinline__ const cuDoubleComplex Invoke(const cuDoubleComplex x) {
+    return cuDoubleComplex{-x.x, -x.y};
+  }
+};
+template<>
+struct UnaryFuncExp<cuDoubleComplex> final {
+  static __device__ __forceinline__ const cuDoubleComplex Invoke(const cuDoubleComplex x) {
+    return cuDoubleComplex{exp(x.x) * cos(x.y), exp(x.x) * sin(x.y)};
+  }
+};
 #endif
 
 #if defined(__HIPCC__)
@@ -134,6 +160,33 @@ struct UnaryFuncExp<half> final {
     return __float2half(expf(__half2float(x)));
   }
 };
+
+template<>
+struct UnaryFuncNegative<hipComplex> final {
+  static __device__ __forceinline__ const hipComplex Invoke(const hipComplex x) {
+    return hipComplex{-x.x, -x.y};
+  }
+};
+template<>
+struct UnaryFuncExp<hipComplex> final {
+  static __device__ __forceinline__ const hipComplex Invoke(const hipComplex x) {
+    return hipComplex{exp(x.x) * cos(x.y), exp(x.x) * sin(x.y)};
+  }
+};
+
+template<>
+struct UnaryFuncNegative<hipDoubleComplex> final {
+  static __device__ __forceinline__ const hipDoubleComplex Invoke(const hipDoubleComplex x) {
+    return hipDoubleComplex{-x.x, -x.y};
+  }
+};
+template<>
+struct UnaryFuncExp<hipDoubleComplex> final {
+  static __device__ __forceinline__ const hipDoubleComplex Invoke(const hipDoubleComplex x) {
+    return hipDoubleComplex{exp(x.x) * cos(x.y), exp(x.x) * sin(x.y)};
+  }
+};
+
 #endif
 
 template<typename T>

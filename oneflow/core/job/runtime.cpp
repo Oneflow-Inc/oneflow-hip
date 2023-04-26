@@ -71,7 +71,7 @@ Runtime::Runtime(
     collective_boxing_scheduler_plan_token_ =
         Singleton<boxing::collective::Scheduler>::Get()->AddPlan(plan);
 #if defined(WITH_CUDA) || defined(WITH_ROCM)
-    Singleton<EagerNcclCommMgr>::Get()->CreateCommFromPlan(plan);
+    Singleton<EagerCclCommMgr>::Get()->CreateCommFromPlan(plan);
 #endif  // WITH_CUDA
   }
   std::vector<const TaskProto*> source_tasks;

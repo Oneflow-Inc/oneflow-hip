@@ -59,6 +59,32 @@ __global__ void ConstantPadKernel(ConstantPadParams<num_dims, IndexType> params,
   }
 }
 
+#ifdef WITH_ROCM
+template<>
+hipComplex GetValue<hipComplex>(Scalar value) {
+  const std::complex<float> cpp_value = GetValue<std::complex<float>>(value);
+  return hipComplex{cpp_value.real(), cpp_value.imag()};
+}
+
+template<>
+hipDoubleComplex GetValue<hipDoubleComplex>(Scalar value) {
+  const std::complex<double> cpp_value = GetValue<std::complex<double>>(value);
+  return hipDoubleComplex{cpp_value.real(), cpp_value.imag()};
+}
+#else
+template<>
+cuComplex GetValue<cuComplex>(Scalar value) {
+  const std::complex<float> cpp_value = GetValue<std::complex<float>>(value);
+  return cuComplex{cpp_value.real(), cpp_value.imag()};
+}
+
+template<>
+cuDoubleComplex GetValue<cuDoubleComplex>(Scalar value) {
+  const std::complex<double> cpp_value = GetValue<std::complex<double>>(value);
+  return cuDoubleComplex{cpp_value.real(), cpp_value.imag()};
+}
+#endif
+
 template<>
 half GetValue<half>(Scalar value) {
   return static_cast<half>(GetValue<float>(value));
@@ -236,7 +262,8 @@ class ConstantPadFactoryImpl : public ConstantPadFactory {
 
     static const std::map<DataType, std::function<std::unique_ptr<ConstantPad>()>>
         new_constant_pad_handle{
-            OF_PP_FOR_EACH_TUPLE(MAKE_NEW_CONSTANT_PAD_ENTRY, CUDA_PRIMITIVE_ALL_TYPE_SEQ)};
+            OF_PP_FOR_EACH_TUPLE(MAKE_NEW_CONSTANT_PAD_ENTRY,
+                                 CUDA_PRIMITIVE_REAL_TYPE_SEQ CUDA_PRIMITIVE_COMPLEX_TYPE_SEQ)};
 
 #undef MAKE_NEW_CONSTANT_PAD_ENTRY
 

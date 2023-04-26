@@ -231,6 +231,13 @@ struct SliceKernelUtil<DeviceType::kCUDA, T> {
 };
 
 INSTANTIATE_SLICE_KERNEL_UTIL_WITH_DEVICE(DeviceType::kCUDA)
+#ifdef WITH_ROCM
+INSTANTIATE_SLICE_KERNEL_UTIL(DeviceType::kCUDA, hipComplex)
+INSTANTIATE_SLICE_KERNEL_UTIL(DeviceType::kCUDA, hipDoubleComplex)
+#else
+INSTANTIATE_SLICE_KERNEL_UTIL(DeviceType::kCUDA, cuComplex)
+INSTANTIATE_SLICE_KERNEL_UTIL(DeviceType::kCUDA, cuDoubleComplex)
+#endif
 #if CUDA_VERSION >= 11000
 INSTANTIATE_SLICE_KERNEL_UTIL(DeviceType::kCUDA, nv_bfloat16)
 #endif
