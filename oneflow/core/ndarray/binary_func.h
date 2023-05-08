@@ -566,6 +566,51 @@ struct BinaryFuncMin<half> final {
   }
 };
 
+template<>
+struct BinaryFuncAdd<hipComplex> final {
+  static __device__ __forceinline__ hipComplex Invoke(const hipComplex x, const hipComplex y) {
+    return hipComplex{x.x + y.x, x.y + y.y};
+  }
+};
+
+template<>
+struct BinaryFuncSub<hipComplex> final {
+  static __device__ __forceinline__ hipComplex Invoke(const hipComplex x, const hipComplex y) {
+    return hipComplex{x.x - y.x, x.y - y.y};
+  }
+};
+
+template<>
+struct BinaryFuncMul<hipComplex> final {
+  static __device__ __forceinline__ hipComplex Invoke(const hipComplex x, const hipComplex y) {
+    return hipCmulf(x, y);
+  }
+};
+
+template<>
+struct BinaryFuncAdd<hipDoubleComplex> final {
+  static __device__ __forceinline__ hipDoubleComplex Invoke(const hipDoubleComplex x,
+                                                           const hipDoubleComplex y) {
+    return hipDoubleComplex{x.x + y.x, x.y + y.y};
+  }
+};
+
+template<>
+struct BinaryFuncSub<hipDoubleComplex> final {
+  static __device__ __forceinline__ hipDoubleComplex Invoke(const hipDoubleComplex x,
+                                                           const hipDoubleComplex y) {
+    return hipDoubleComplex{x.x - y.x, x.y - y.y};
+  }
+};
+
+template<>
+struct BinaryFuncMul<hipDoubleComplex> final {
+  static __device__ __forceinline__ hipDoubleComplex Invoke(const hipDoubleComplex x,
+                                                           const hipDoubleComplex y) {
+    return hipCmul(x, y);
+  }
+};
+
 #endif  // defined(__HIPCC__)
 
 template<typename T, template<typename> class binary_func>
@@ -964,6 +1009,51 @@ struct BinaryFuncMin<half> final {
 #else
     NO_HALF_UTIL_FOUND;
 #endif
+  }
+};
+
+template<>
+struct BinaryFuncAdd<cuComplex> final {
+  static __device__ __forceinline__ cuComplex Invoke(const cuComplex x, const cuComplex y) {
+    return cuComplex{x.x + y.x, x.y + y.y};
+  }
+};
+
+template<>
+struct BinaryFuncSub<cuComplex> final {
+  static __device__ __forceinline__ cuComplex Invoke(const cuComplex x, const cuComplex y) {
+    return cuComplex{x.x - y.x, x.y - y.y};
+  }
+};
+
+template<>
+struct BinaryFuncMul<cuComplex> final {
+  static __device__ __forceinline__ cuComplex Invoke(const cuComplex x, const cuComplex y) {
+    return cuCmulf(x, y);
+  }
+};
+
+template<>
+struct BinaryFuncAdd<cuDoubleComplex> final {
+  static __device__ __forceinline__ cuDoubleComplex Invoke(const cuDoubleComplex x,
+                                                           const cuDoubleComplex y) {
+    return cuDoubleComplex{x.x + y.x, x.y + y.y};
+  }
+};
+
+template<>
+struct BinaryFuncSub<cuDoubleComplex> final {
+  static __device__ __forceinline__ cuDoubleComplex Invoke(const cuDoubleComplex x,
+                                                           const cuDoubleComplex y) {
+    return cuDoubleComplex{x.x - y.x, x.y - y.y};
+  }
+};
+
+template<>
+struct BinaryFuncMul<cuDoubleComplex> final {
+  static __device__ __forceinline__ cuDoubleComplex Invoke(const cuDoubleComplex x,
+                                                           const cuDoubleComplex y) {
+    return cuCmul(x, y);
   }
 };
 

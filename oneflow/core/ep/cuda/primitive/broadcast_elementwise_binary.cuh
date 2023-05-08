@@ -334,6 +334,32 @@ half GetValue<half>(Scalar value) {
   return static_cast<half>(GetValue<float>(value));
 }
 
+#ifdef WITH_ROCM
+template<>
+hipComplex GetValue<hipComplex>(Scalar value) {
+  const std::complex<float> cpp_value = GetValue<std::complex<float>>(value);
+  return hipFloatComplex{cpp_value.real(), cpp_value.imag()};
+}
+
+template<>
+hipDoubleComplex GetValue<hipDoubleComplex>(Scalar value) {
+  const std::complex<double> cpp_value = GetValue<std::complex<double>>(value);
+  return hipDoubleComplex{cpp_value.real(), cpp_value.imag()};
+}
+#else
+template<>
+cuComplex GetValue<cuComplex>(Scalar value) {
+  const std::complex<float> cpp_value = GetValue<std::complex<float>>(value);
+  return cuFloatComplex{cpp_value.real(), cpp_value.imag()};
+}
+
+template<>
+cuDoubleComplex GetValue<cuDoubleComplex>(Scalar value) {
+  const std::complex<double> cpp_value = GetValue<std::complex<double>>(value);
+  return cuDoubleComplex{cpp_value.real(), cpp_value.imag()};
+}
+#endif
+
 #if CUDA_VERSION >= 11000
 
 template<>
