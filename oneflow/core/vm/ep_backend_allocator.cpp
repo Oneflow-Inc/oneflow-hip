@@ -29,24 +29,14 @@ void EpBackendAllocator::Deallocate(char* mem_ptr, std::size_t size) {
 }
 
 void EpBackendAllocator::DeviceReset() {
-#ifdef WITH_CUDA
+#if defined(WITH_CUDA) || defined(WITH_ROCM)
   if (ep_device_->device_type() == DeviceType::kCUDA) {
     ep_device_->SetAsActiveDevice();
     // NOTE(chengcheng): In some corner case on ubuntu, cuda memory not released even if OOM.
     //   So there need release all cuda memory allocated by this process before core dump.
-    LOG(WARNING) << "OOM error is detected, process will exit. And it will start to reset CUDA "
+    LOG(WARNING) << "OOM error is detected, process will exit. And it will start to reset "
                  << "device for releasing device memory.";
-    OF_CUDA_CHECK(cudaDeviceReset());
-  }
-#endif
-#ifdef WITH_ROCM
-  if (ep_device_->device_type() == DeviceType::kCUDA) {
-    ep_device_->SetAsActiveDevice();
-    // NOTE(chengcheng): In some corner case on ubuntu, cuda memory not released even if OOM.
-    //   So there need release all cuda memory allocated by this process before core dump.
-    LOG(WARNING) << "OOM error is detected, process will exit. And it will start to reset CUDA "
-                 << "device for releasing device memory.";
-    OF_CUDA_CHECK(hipDeviceReset());
+    ep_device_->Reset();
   }
 #endif
 }
