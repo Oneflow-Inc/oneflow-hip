@@ -1,209 +1,124 @@
 # OneFlow
 
-OneFlow is a deep learning framework designed to be **user-friendly, scalable and efficient**. With OneFlow, it is easy to:
-- program a model with [**PyTorch-like API**](https://oneflow.readthedocs.io/en/master/)
-- scale a model to n-dimensional-parallel execution with the [**Global Tensor**](https://docs.oneflow.org/en/master/cookies/global_tensor.html)
-- accelerate/deploy a model with the [**Graph Compiler**](https://oneflow.readthedocs.io/en/master/graph.html).
+OneFlow 是一个深度学习框架，旨在**易用，可扩展且高效**。使用 OneFlow，很容易做到:
 
-[![Simple CI](https://github.com/Oneflow-Inc/oneflow/actions/workflows/simple.yml/badge.svg)](https://github.com/Oneflow-Inc/oneflow/actions/workflows/simple.yml)
-[![Nightly Docker Image](https://github.com/Oneflow-Inc/docker-images/actions/workflows/oneflow-nightly.yml/badge.svg)](https://github.com/Oneflow-Inc/docker-images/actions/workflows/oneflow-nightly.yml)
-[![Nightly Release](https://github.com/Oneflow-Inc/oneflow/actions/workflows/release.yml/badge.svg)](https://github.com/Oneflow-Inc/oneflow/actions/workflows/release.yml)
-[![Documentation](https://readthedocs.org/projects/oneflow/badge/?version=master)](https://oneflow.readthedocs.io/en/master/?badge=master)
+- 模型编程使用与 pytorch 类似的 API
+
+- 使用 global API 将模型扩展到 n 维并行以便于分布式执行
+- 使用静态图编译器加速/部署模型
 
 ## Latest News
 
 - Version 0.9.0 is out!
   - [Full changelog](https://github.com/Oneflow-Inc/oneflow/releases/tag/v0.9.0)
 
-## Publication
-
-- [OneFlow: Redesign the Distributed Deep Learning Framework from Scratch](https://arxiv.org/abs/2110.15032)
-- Bibtex Citation
-
-  ```
-  @misc{yuan2021oneflow,
-        title={OneFlow: Redesign the Distributed Deep Learning Framework from Scratch},
-        author={Jinhui Yuan and Xinqi Li and Cheng Cheng and Juncheng Liu and Ran Guo and Shenghang Cai and Chi Yao and Fei Yang and Xiaodong Yi and Chuan Wu and Haoran Zhang and Jie Zhao},
-        year={2021},
-        eprint={2110.15032},
-        archivePrefix={arXiv},
-        primaryClass={cs.DC}
-  }
-  ```
-
-## Install OneFlow
+## 安装 OneFlow-DCU
 
 ### System Requirements
 
-- Linux. As for now, there is no pre-built release for macOS, Windows.
-- Python 3.7, 3.8, 3.9, 3.10
-- (**Highly recommended**) Upgrade pip
+- Linux.
+
+- Python 3.7, 3.8, 3.9
+
+- (**推荐**) Upgrade pip
 
   ```
   python3 -m pip install --upgrade pip #--user
   ```
 
-- CUDA Toolkit Linux x86_64 Driver
+###  Pip 安装
 
-  - CUDA runtime is statically linked into OneFlow. OneFlow will work on a minimum supported driver, and any driver beyond. For more information, please refer to [CUDA compatibility documentation](https://docs.nvidia.com/deploy/cuda-compatibility/index.html).
+可以再光合[光合开发者社区](https://developer.hpccube.com/tool/#sdk) AI 生态包中获取最新的 Oneflow-DCU Release 版本（需对应 DCU Toolkit 版本与 python 版本）
 
-  - Please upgrade your Nvidia driver to version 440.33 or above and install OneFlow for CUDA 10.2 if possible.
-
-### Install with Pip Package
-
-- To install latest stable release of OneFlow with CUDA support:
-
-  ```bash
-  python3 -m pip install oneflow
-  ```
-
-- To install nightly release of OneFlow with CUDA support:
-
-  ```bash
-  python3 -m pip install --pre oneflow -f https://staging.oneflow.info/branch/master/cu117
-  ```
-
-- To install other available builds for different variants:
-
-  - Stable
-    ```bash
-    python3 -m pip install --find-links https://release.oneflow.info oneflow==0.9.0+cu117
-    ```
-  - Nightly
-    ```
-    python3 -m pip install --pre oneflow -f https://staging.oneflow.info/branch/master/[PLATFORM]
-    ```
-  - All available `[PLATFORM]`:
-    | Platform |CUDA Driver Version| Supported GPUs |
-    |---|---|---|
-    | cu117 | >= 450.80.02 | GTX 10xx, RTX 20xx, A100, RTX 30xx |
-    | cu102 | >= 440.33 | GTX 10xx, RTX 20xx |
-    | cpu | N/A | N/A |
-
-- If you are in China, you could run this to have pip download packages from domestic mirror of pypi:
-  ```
-  python3 -m pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
-  ```
-  For more information on this, please refer to [pypi 镜像使用帮助](https://mirror.tuna.tsinghua.edu.cn/help/pypi/)
-
-### Use docker image
-
-```
-docker pull oneflowinc/oneflow:nightly-cuda11.7
+```bash
+python3 -m pip install oneflow-0.9+dtk22101.git.5be579-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 ```
 
-### Build from Source
+### 使用镜像
 
-<details>
-<summary>Clone Source Code</summary>
+提供 oneflow 0.9，dtk-22.10.1，python 3.9 的光源镜像
 
-- #### Option 1: Clone source code from GitHub
+```
+docker pull image.sourcefind.cn:5000/dcu/admin/base/oneflow:0.9.1-centos7.6-dtk-22.10.1-py39-latest
+```
 
-  ```bash
-  git clone https://github.com/Oneflow-Inc/oneflow --depth=1
+### 在 DCU 平台上源码编译（DTK-22.10.1，Python3.9）
+
+- 拉取官方 CPU 镜像
+
+  ```
+  docker pull oneflowinc/manylinux2014_x86_64_cpu:latest
   ```
 
-- #### Option 2: Download from Aliyun
+- 使用官网镜像建立 docker
 
-  If you are in China, please download OneFlow source code from: https://oneflow-public.oss-cn-beijing.aliyuncs.com/oneflow-src.zip
-
-  ```bash
-  curl https://oneflow-public.oss-cn-beijing.aliyuncs.com/oneflow-src.zip -o oneflow-src.zip
-  unzip oneflow-src.zip
+  ```
+  docker run -it --network=host --name=oneflow_compile --privileged --device=/dev/kfd --device=/dev/dri --ipc=host --shm-size=16G  --group-add video --cap-add=SYS_PTRACE --security-opt seccomp=unconfined -u root --ulimit stack=-1:-1 --ulimit memlock=-1:-1 -v /public/home/xxx:/home oneflowinc/manylinux2014_x86_64_cpu:latest /bin/bash
+  
+  docker exec -it oneflow_compile /bin/bash
   ```
 
-  </details>
+- 拉取 oneflow 代码
 
-<details>
-<summary>Build OneFlow</summary>
+  ```
+  git clone -b 0.9.1-rocm http://developer.hpccube.com/codes/aicomponent/oneflow.git
+  ```
 
-- #### Option 1: Build with Conda (recommended)
+- 在[开发者社区](https://developer.hpccube.com/tool/#sdk) DCU Toolkit 中下载 DTK-22.10.1 解压至 /opt/ 路径下，并建立软链接
 
-  Please refer to [this repo](https://github.com/Oneflow-Inc/conda-env)
+  ```
+  cd /opt && ln -s dtk-22.10.1 rocm
+  ```
 
-- #### Option 2: Build in docker container (recommended)
+- 导入环境变量以及安装必要依赖库
 
-  - Pull the docker image:
+  ```
+  export ROCM_PATH=/opt/rocm
+  export HIP_PATH=${ROCM_PATH}/hip
+  export CPACK_INSTLL_PREFIX=$ROCM_PATH
+  export AMDGPU_TARGETS="gfx900;gfx906"
+  export PATH=${ROCM_PATH}/bin:${ROCM_PATH}/llvm/bin:${ROCM_PATH}/hcc/bin:${ROCM_PATH}/hip/bin:$PATH
+  export LD_LIBRARY_PATH=${ROCM_PATH}/lib:${ROCM_PATH}/lib64:$LD_LIBRARY_PATH
+  export LD_LIBRARY_PATH=${ROCM_PATH}/hip/lib:${ROCM_PATH}/llvm/lib:${ROCM_PATH}/opencl/lib/x86_64:$LD_LIBRARY_PATH
+  export C_INCLUDE_PATH=${ROCM_PATH}/include:${ROCM_PATH}/hip/include/hip:${ROCM_PATH}/llvm/include:/opencl/include:${C_INCLUDE_PATH}
+  export CPLUS_INCLUDE_PATH=${ROCM_PATH}/include:${ROCM_PATH}/hip/include/hip:${ROCM_PATH}/llvm/include:/opencl/include:${CPLUS_INCLUDE_PATH}
+  export PATH=${ROCM_PATH}/miopen/bin:${ROCM_PATH}/rocblas/bin:${ROCM_PATH}/hipsparse/bin:$PATH
+  export LD_LIBRARY_PATH=${ROCM_PATH}/miopen/lib:${ROCM_PATH}/rocblas/lib:$LD_LIBRARY_PATH
+  export MIOPEN_SYSTEM_DB_PATH=${ROCM_PATH}/miopen/share/miopen/db/
+  export LD_LIBRARY_PATH=/usr/lib64:$LD_LIBRARY_PATH
+  export LIBRARY_PATH=/usr/lib64:$LIBRARY_PATH                     
+  export RCCL_PATH=$ROCM_PATH/rccl
+  export NCCL_PATH=$ROCM_PATH/rccl
+  export LD_LIBRARY_PATH=$RCCL_PATH/lib:$LD_LIBRARY_PATH
+  
+  export MIOPEN_FIND_MODE=3
+  export HSA_FORCE_FINE_GRAIN_PCIE=1
+  export MIOPEN_COMPILE_PARALLEL_LEVEL=1
+  
+  source /opt/rh/devtoolset-7/enable
+  
+  export PV=39
+  ln -s /opt/python/cp${PV}-cp${PV}/bin/python3 /usr/bin/python3
+  ln -s /opt/python/cp${PV}-cp${PV}/bin/pip3 /usr/bin/pip3
+  
+  yum install -y numactl libffi* openblas openblas-devel libibverbs-devel
+  cd oneflow && pip3 install -r dev-requirements.txt -i http://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com
+  ```
 
-    ```bash
-    docker pull oneflowinc/manylinux2014_x86_64_cuda11.2
-    ```
+- cmake && make
 
-  - Follow the instructions in the bare metal build guide below.
+  ```
+  cd oneflow && mkdir build && cmake .. -DBUILD_CUDA=OFF -DBUILD_ROCM=ON -DONEFLOW=ON -DUSE_CLANG_FORMAT=OFF -DCMAKE_BUILD_TYPE=Release -DTHIRD_PARTY=ON -DTREAT_WARNINGS_AS_ERRORS=OFF -DTHIRD_PARTY_MIRROR=aliyun -DBUILD_HWLOC=OFF -DCMAKE_C_COMPILER=${ROCM_PATH}/llvm/bin/clang -DCMAKE_CXX_COMPILER=${ROCM_PATH}/llvm/bin/clang++ -DBUILD_TESTING=ON -DBUILD_RDMA=ON -DBUILD_PROFILER=ON
+  
+  make -j32
+  ```
 
-- #### Option 3: Build on bare metal
+- 验证安装
 
-  - Install dependencies (not required if you are using docker):
-    - on Ubuntu 20.04, run:
-      ```
-      sudo apt install -y libopenblas-dev nasm g++ gcc python3-pip cmake autoconf libtool
-      ```
-    - on macOS, run:
-      ```
-      brew install nasm
-      ```
-  - In the root directory of OneFlow source code, run:
-
-    ```
-    mkdir build
-    cd build
-    ```
-
-  - Config the project, inside `build` directory:
-
-    - If you are in China
-
-      run this to config for CUDA:
-
-      ```
-      cmake .. -C ../cmake/caches/cn/cuda.cmake
-      ```
-
-      run this to config for CPU-only:
-
-      ```
-      cmake .. -C ../cmake/caches/cn/cpu.cmake
-      ```
-
-    - If you are not in China
-
-      run this to config for CUDA:
-
-      ```
-      cmake .. -C ../cmake/caches/international/cuda.cmake
-      ```
-
-      run this to config for CPU-only:
-
-      ```
-      cmake .. -C ../cmake/caches/international/cpu.cmake
-      ```
-
-  - Build the project, inside `build` directory, run:
-
-    ```
-    make -j$(nproc)
-    ```
-
-  - Add oneflow to your PYTHONPATH, inside `build` directory, run:
-
-    ```
-    source source.sh
-    ```
-
-    Please note that this change is not permanent.
-
-  - Simple validation
-
-    ```
-    python3 -m oneflow --doctor
-    ```
-
-    </details>
-
-### Troubleshooting
-
-Please refer to [troubleshooting](docs/source/troubleshooting.md) for common issues you might encounter when compiling and running OneFlow.
+  ```
+  cd build && source source.sh    # 将oneflow导入PYTHONPATH
+  python3 -c “import oneflow”
+  ```
 
 ### Advanced features
 
