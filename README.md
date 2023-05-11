@@ -138,13 +138,14 @@ docker pull image.sourcefind.cn:5000/dcu/admin/base/oneflow:0.9.1-centos7.6-dtk-
 ## Model Zoo and Benchmark
 
 - [Libai(Toolbox for Parallel Training Large-Scale Transformer Models)](https://github.com/Oneflow-Inc/libai)
+  
   - [BERT-large](https://libai.readthedocs.io/en/latest/tutorials/get_started/quick_run.html)
   
   - [GPT](https://libai.readthedocs.io/en/latest/modules/libai.models.html#id5)
   
     使用LiBai的GPT2，DCU与A800的精度对比曲线如下：
   
-    ![a68d1d3151e39b4c80d337223678862](C:\Users\Administrator\AppData\Local\Temp\WeChat Files\a68d1d3151e39b4c80d337223678862.jpg)
+    ![](D:\git\oneflow-hip\gpt2_loss.jpg)
   
   - [T5](https://libai.readthedocs.io/en/latest/modules/libai.models.html#id4)
   
