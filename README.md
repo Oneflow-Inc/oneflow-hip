@@ -145,7 +145,7 @@ docker pull image.sourcefind.cn:5000/dcu/admin/base/oneflow:0.9.1-centos7.6-dtk-
   
     使用LiBai的GPT2，DCU与A800的精度对比曲线如下：
   
-    ![](D:\git\oneflow-hip\gpt2_loss.jpg)
+    ![](https://github.com/yuguo-Jack/oneflow-hip/blob/rocm/gpt2_loss.jpg)
   
   - [T5](https://libai.readthedocs.io/en/latest/modules/libai.models.html#id4)
   
