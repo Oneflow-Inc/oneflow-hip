@@ -139,14 +139,25 @@ docker pull image.sourcefind.cn:5000/dcu/admin/base/oneflow:0.9.1-centos7.6-dtk-
 
 - [Libai(Toolbox for Parallel Training Large-Scale Transformer Models)](https://github.com/Oneflow-Inc/libai)
   - [BERT-large](https://libai.readthedocs.io/en/latest/tutorials/get_started/quick_run.html)
+  
   - [GPT](https://libai.readthedocs.io/en/latest/modules/libai.models.html#id5)
+  
+    使用LiBai的GPT2，DCU与A800的精度对比曲线如下：
+  
+    ![a68d1d3151e39b4c80d337223678862](C:\Users\Administrator\AppData\Local\Temp\WeChat Files\a68d1d3151e39b4c80d337223678862.jpg)
+  
   - [T5](https://libai.readthedocs.io/en/latest/modules/libai.models.html#id4)
+  
   - [VisionTransformer](https://libai.readthedocs.io/en/latest/modules/libai.models.html#id1)
+  
   - [SwinTransformer](https://libai.readthedocs.io/en/latest/modules/libai.models.html#id2)
+  
 - [FlowVision(Toolbox for Computer Vision Datasets, SOTA Models and Utils)](https://github.com/Oneflow-Inc/vision)
+
 - [OneFlow-Models(Examples of How to Implement Models in Various Fields with OneFlow)](https://github.com/Oneflow-Inc/models)
   - [ResNet-50](https://github.com/Oneflow-Inc/models/tree/main/Vision/classification/image/resnet50)
   - [Wide&Deep](https://github.com/Oneflow-Inc/models/tree/main/RecommenderSystems/wide_and_deep)
+  
 - [OneFlow-Benchmark(Outdated)](https://github.com/Oneflow-Inc/OneFlow-Benchmark)
 
 ## Communication
