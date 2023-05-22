@@ -197,6 +197,7 @@ class CuFFTConfig {
       //  https://docs.nvidia.com/cuda/cufft/#half-precision-cufft-transforms
       CHECK_OR_THROW(false) << "Unsupported datatype kBFloat16 and kFloat16.";
     }
+    execparams = params;
 
     CuFFTDataLayout input_layout = as_cufft_embed(params.input_strides, params.data_shape,
                                                   params.excute_type == CUFFT_EXCUTETYPE::C2R);
@@ -238,8 +239,39 @@ class CuFFTConfig {
   const hipfftHandle& plan() const { return plan_handle_.get(); }
 
   void excute(void* input, void* output, bool forward) {
-    OF_CUFFT_CHECK(
-        hipfftXtExec(plan_handle_.get(), input, output, forward ? HIPFFT_FORWARD : HIPFFT_BACKWARD));
+    if (execparams.real_data_type == kFloat) {
+      switch (execparams.excute_type) {
+        case CUFFT_EXCUTETYPE::R2C: 
+          OF_CUFFT_CHECK(hipfftExecR2C(plan_handle_.get(), static_cast<hipfftReal*>(input), static_cast<hipfftComplex*>(output)));
+          break;
+        case CUFFT_EXCUTETYPE::C2R: 
+          OF_CUFFT_CHECK(hipfftExecC2R(plan_handle_.get(), static_cast<hipfftComplex*>(input), static_cast<hipfftReal*>(output)));
+          break;
+        case CUFFT_EXCUTETYPE::C2C: 
+          OF_CUFFT_CHECK(hipfftExecC2C(plan_handle_.get(), static_cast<hipfftComplex*>(input), static_cast<hipfftComplex*>(output), forward ? HIPFFT_FORWARD : HIPFFT_BACKWARD));
+          break;
+        default: 
+          CHECK_OR_THROW(false) << "hipFFT doesn't support this execution";
+          break;
+      }
+    } else if (real_data_type == kDouble) {
+      switch (execparams.excute_type) {
+        case CUFFT_EXCUTETYPE::R2C: 
+          OF_CUFFT_CHECK(hipfftExecD2Z(plan_handle_.get(), static_cast<hipfftDoubleReal*>(input), static_cast<hipfftDoubleComplex*>(output)));
+          break;
+        case CUFFT_EXCUTETYPE::C2R: 
+          OF_CUFFT_CHECK(hipfftExecZ2D(plan_handle_.get(), static_cast<hipfftDoubleComplex*>(input), static_cast<hipfftDoubleReal*>(output)));
+          break;
+        case CUFFT_EXCUTETYPE::C2C: 
+          OF_CUFFT_CHECK(hipfftExecZ2Z(plan_handle_.get(), static_cast<hipfftDoubleComplex*>(input), static_cast<hipfftDoubleComplex*>(output), forward ? HIPFFT_FORWARD : HIPFFT_BACKWARD));
+          break;
+        default: 
+          CHECK_OR_THROW(false) << "hipFFT doesn't support this execution";
+          break;
+      }
+    } else {
+      CHECK_OR_THROW(false) << "hipFFT doesn't support type " << real_data_type;
+    }
   }
 
  private:
@@ -275,19 +307,17 @@ class CuFFTConfig {
           break;
       }
     } else {
-      CHECK_OR_THROW(false) << "cuFFT doesn't support type " << real_data_type;
+      CHECK_OR_THROW(false) << "hipFFT doesn't support type " << real_data_type;
     }
   }
 
   CuFFTHandle plan_handle_;
   CuFFTDataTypeDesc data_type_desc_;
   size_t work_size_;
+  CuFFTParams execparams;
 };
 
 }  // namespace oneflow
-
-}  // namespace oneflow
-
 
 #else
 
