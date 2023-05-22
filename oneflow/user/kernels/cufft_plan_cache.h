@@ -569,6 +569,6 @@ class CuFFTConfig {
 
 }  // namespace oneflow
 
-#endif 
+#endif //WITH_CUDA || WITH_ROCM
 
 #endif  // ONEFLOW_USER_KERNELS_CUFFT_PLAN_CACHE_H_
