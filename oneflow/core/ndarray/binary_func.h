@@ -445,16 +445,6 @@ struct BinaryFuncLE final {
 SPECIALIZE_CONST_TYPE_BINARY_FUNC(BinaryFuncLE);
 
 template<typename T>
-struct BinaryFuncIEN final {
-  // placeholder, no definition required, the type is only used to generate Op
-};
-
-template<typename T>
-struct BinaryFuncINN final {
-  // placeholder, no definition required, the type is only used to generate Op
-};
-
-template<typename T>
 struct BinaryFuncAND final {
   static OF_DEVICE_FUNC bool Invoke(const T x, const T y) { return x && y; }
 };
@@ -631,6 +621,19 @@ SPECIALIZE_UNIT_OF_BINARY_FUNC(BinaryFuncMin, GetMaxVal);
 SPECIALIZE_UNIT_OF_BINARY_FUNC(BinaryFuncAny, GetZeroVal);
 SPECIALIZE_UNIT_OF_BINARY_FUNC(BinaryFuncAll, GetOneVal);
 #undef SPECIALIZE_UNIT_OF_BINARY_FUNC
+
+/*
+These placeholder specializations are used for `GetBinaryBroadcastSbpSignature` in
+oneflow/user/ops/math_binary_broadcast_ops.cpp
+*/
+#define SPECIALIZE_FOR_SBP(binary_func) \
+  template<typename T>                  \
+  struct binary_func final {};
+
+SPECIALIZE_FOR_SBP(BinaryFuncIEN);
+SPECIALIZE_FOR_SBP(BinaryFuncINN);
+SPECIALIZE_FOR_SBP(BinaryFuncZeta);
+#undef SPECIALIZE_FOR_SBP
 
 }  // namespace oneflow
 
@@ -888,16 +891,6 @@ struct BinaryFuncLE final {
   static OF_DEVICE_FUNC bool Invoke(const T x, const T y) { return x <= y; }
 };
 SPECIALIZE_CONST_TYPE_BINARY_FUNC(BinaryFuncLE);
-
-template<typename T>
-struct BinaryFuncIEN final {
-  // placeholder, no definition required, the type is only used to generate Op
-};
-
-template<typename T>
-struct BinaryFuncINN final {
-  // placeholder, no definition required, the type is only used to generate Op
-};
 
 template<typename T>
 struct BinaryFuncAND final {
@@ -1238,6 +1231,18 @@ SPECIALIZE_UNIT_OF_BINARY_FUNC(BinaryFuncAny, GetZeroVal);
 SPECIALIZE_UNIT_OF_BINARY_FUNC(BinaryFuncAll, GetOneVal);
 #undef SPECIALIZE_UNIT_OF_BINARY_FUNC
 
+/*
+These placeholder specializations are used for `GetBinaryBroadcastSbpSignature` in
+oneflow/user/ops/math_binary_broadcast_ops.cpp
+*/
+#define SPECIALIZE_FOR_SBP(binary_func) \
+  template<typename T>                  \
+  struct binary_func final {};
+
+SPECIALIZE_FOR_SBP(BinaryFuncIEN);
+SPECIALIZE_FOR_SBP(BinaryFuncINN);
+SPECIALIZE_FOR_SBP(BinaryFuncZeta);
+#undef SPECIALIZE_FOR_SBP
 }  // namespace oneflow
 
 #endif //WITH_ROCM

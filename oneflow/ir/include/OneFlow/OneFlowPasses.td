@@ -6,14 +6,18 @@ include "OneFlow/OneFlowOps.td"
 #ifdef WITH_MLIR_CUDA_CODEGEN
 def NVVMToCubinPass : InterfacePass<"nvvm-to-cubin", "SymbolOpInterface"> {
   let summary = "convert nvvm ir to cubin";
-  let constructor = "mlir::createNVVMToCubinPass()";
+  let constructor = "mlir::oneflow::createNVVMToCubinPass()";
   let options = [
     Option<"triple", "triple", "StringRef", "\"nvptx64-nvidia-cuda\"", "Target triple">,
-    Option<"chip", "chip", "StringRef", "getArchVersion()", "Target architecture">,
+    Option<"chip", "chip", "StringRef", "mlir::oneflow::getArchVersion()", "Target architecture">,
     Option<"features", "features", "StringRef", "\"+ptx60\"", "Target features">,
   ];
 }
 #endif // WITH_MLIR_CUDA_CODEGEN
+
+def TestOneFlowTraitFolderPass : Pass<"test-oneflow-trait-folder", "func::FuncOp"> {
+  let constructor = "mlir::oneflow::createTestOneFlowTraitFolderPass()";
+}
 
 def LowerOneFlowToTosaPass : Pass<"lower-oneflow-to-tosa", "ModuleOp"> {
   let summary = "lower oneflow dialect to tosa dialect";
@@ -112,7 +116,7 @@ def InsertOneFlowMemPoolPass : Pass<"insert-ofmempool", "ModuleOp"> {
   let constructor = "mlir::oneflow::createInsertOneFlowMemPoolPass()";
 }
 
-def FoldAllocToSubviewPass : Pass<"fold-alloc-to-subview", "ModuleOp"> {
+def FoldAllocToSubviewPass : Pass<"fold-alloc-to-subview", "func::FuncOp"> {
   let summary = "fold dispersed memref.alloc ops with memory optimize algo to a single memref.alloc op and memref.subview ops";
   let constructor = "mlir::oneflow::createFoldAllocToSubviewPass()";
 }
