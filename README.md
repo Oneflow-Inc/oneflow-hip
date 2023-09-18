@@ -36,7 +36,34 @@ python3 -m pip install oneflow-0.9+dtk22101.git.5be579-cp39-cp39-manylinux_2_17_
 
 ### 使用镜像
 
-提供 oneflow 0.9，dtk-22.10.1，python 3.9 的光源镜像
+  ```bash
+  python3 -m pip install --pre oneflow -f https://staging.oneflow.info/branch/master/cu117
+  ```
+
+- To install other available builds for different variants:
+
+  - Stable
+    ```bash
+    python3 -m pip install --find-links https://release.oneflow.info oneflow==0.9.0+cu117
+    ```
+  - Nightly
+    ```
+    python3 -m pip install --pre oneflow -f https://staging.oneflow.info/branch/master/[PLATFORM]
+    ```
+  - All available `[PLATFORM]`:
+    | Platform |CUDA Driver Version| Supported GPUs |
+    |---|---|---|
+    | cu117 | >= 450.80.02 | GTX 10xx, RTX 20xx, A100, RTX 30xx |
+    | cu102 | >= 440.33 | GTX 10xx, RTX 20xx |
+    | cpu | N/A | N/A |
+
+- If you are in China, you could run this to have pip download packages from domestic mirror of pypi:
+  ```
+  python3 -m pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+  ```
+  For more information on this, please refer to [pypi 镜像使用帮助](https://mirror.tuna.tsinghua.edu.cn/help/pypi/)
+
+### Use docker image
 
 ```
 docker pull image.sourcefind.cn:5000/dcu/admin/base/oneflow:0.9.1-centos7.6-dtk-22.10.1-py39-latest
