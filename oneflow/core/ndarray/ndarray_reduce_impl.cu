@@ -58,17 +58,16 @@ struct NanSum {
   }
 };
 
-template<>
-OF_DEVICE_FUNC cuComplex cub::Sum::operator()(const cuComplex& a, const cuComplex& b) const {
+}  // namespace cub
+
+__host__ __device__ __forceinline__ cuComplex operator+(const cuComplex& a, const cuComplex& b) {
   return cuComplex{a.x + b.x, a.y + b.y};
 }
 
-template<>
-OF_DEVICE_FUNC cuDoubleComplex cub::Sum::operator()(const cuDoubleComplex& a,
-                                                    const cuDoubleComplex& b) const {
+__host__ __device__ __forceinline__ cuDoubleComplex operator+(const cuDoubleComplex& a,
+                                                              const cuDoubleComplex& b) {
   return cuDoubleComplex{a.x + b.x, a.y + b.y};
 }
-}  // namespace cub
 
 namespace oneflow {
 
@@ -451,18 +450,16 @@ struct NanSum {
   }
 };
 
-template<>
-OF_DEVICE_FUNC hipComplex hipcub::Sum::operator()(const hipComplex& a, const hipComplex& b) const {
+}  // namespace hipcub
+
+__host__ __device__ __forceinline__ hipComplex operator+(const hipComplex& a, const hipComplex& b) {
   return hipComplex{a.x + b.x, a.y + b.y};
 }
 
-template<>
-OF_DEVICE_FUNC hipDoubleComplex hipcub::Sum::operator()(const hipDoubleComplex& a,
-                                                    const hipDoubleComplex& b) const {
+__host__ __device__ __forceinline__ hipDoubleComplex operator+(const hipDoubleComplex& a,
+                                                              const hipDoubleComplex& b) {
   return hipDoubleComplex{a.x + b.x, a.y + b.y};
 }
-
-}  // namespace hipcub
 
 namespace oneflow {
 

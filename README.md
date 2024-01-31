@@ -37,14 +37,14 @@ python3 -m pip install oneflow-0.9+dtk22101.git.5be579-cp39-cp39-manylinux_2_17_
 ### 使用镜像
 
   ```bash
-  python3 -m pip install --pre oneflow -f https://staging.oneflow.info/branch/master/cu117
+  python3 -m pip install --pre oneflow -f https://oneflow-staging.oss-cn-beijing.aliyuncs.com/branch/master/cu118
   ```
 
 - To install other available builds for different variants:
 
   - Stable
     ```bash
-    python3 -m pip install --find-links https://release.oneflow.info oneflow==0.9.0+cu117
+    python3 -m pip install --find-links https://release.oneflow.info oneflow==0.9.0+cu118
     ```
   - Nightly
     ```
@@ -53,8 +53,7 @@ python3 -m pip install oneflow-0.9+dtk22101.git.5be579-cp39-cp39-manylinux_2_17_
   - All available `[PLATFORM]`:
     | Platform |CUDA Driver Version| Supported GPUs |
     |---|---|---|
-    | cu117 | >= 450.80.02 | GTX 10xx, RTX 20xx, A100, RTX 30xx |
-    | cu102 | >= 440.33 | GTX 10xx, RTX 20xx |
+    | cu118 | >= 450.80.02 | GTX 10xx, RTX 20xx, A100, RTX 30xx |
     | cpu | N/A | N/A |
 
 - If you are in China, you could run this to have pip download packages from domestic mirror of pypi:

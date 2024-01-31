@@ -52,6 +52,9 @@ from oneflow.nn.graph.util import (
     GraphIR,
     seq_to_func_return,
     sys_exc_error_msg,
+    _rsd_sub_destination_to,
+    _job_to,
+    _plan_to,
 )
 from oneflow.framework.args_tree import ArgsTree
 from oneflow.nn.modules.module import Module
@@ -274,7 +277,7 @@ class Graph(object):
             Donot override this function.
         """
         # For cache cache graphs with dynamic input shape.
-        if self._run_with_cache == True:
+        if self._run_with_cache:
             return self._dynamic_input_graph_cache(*args, **kwargs)
 
         if not self._is_compiled:
@@ -841,7 +844,7 @@ class Graph(object):
         return a_graph
 
     def _compile(self, *args, **kwargs):
-        if self._run_with_cache == True:
+        if self._run_with_cache:
             return self._dynamic_input_graph_cache._compile(*args, **kwargs)
 
         if not self._is_compiled:
@@ -906,7 +909,7 @@ class Graph(object):
         # Filter to get unique states in graph
         state_op_names = self._filter_states()
         # Generate new config.
-        if self._shared_graph._is_from_runtime_state_dict == True:
+        if self._shared_graph._is_from_runtime_state_dict:
             # To avoid same graph name with the loaded graphs.
             self._name = (
                 self._name + "_of_shared_from_loaded_" + self._shared_graph.name
@@ -1043,7 +1046,7 @@ class Graph(object):
         Dict[str, Union[Dict[str, Tensor], str]],
         Dict[str, Dict[str, Union[Dict[str, Tensor], str]]],
     ]:
-        if self._run_with_cache == True:
+        if self._run_with_cache:
             return self._dynamic_input_graph_cache.runtime_state_dict(
                 with_eager=with_eager
             )
@@ -1069,34 +1072,35 @@ class Graph(object):
             assert len(tensor_tuple) == len(name_list)
             for name_idx in range(len(name_list)):
                 tensor_item = tensor_tuple[name_idx]
-                dest_dict[name_list[name_idx]] = (tensor_item, tensor_item.device.type)
+                device_str = ":".join(
+                    (tensor_item.device.type, str(tensor_item.device.index))
+                )
+                dest_dict[name_list[name_idx]] = (tensor_item, device_str)
 
         # This is original outputs is needed to build output buffer.
         tuple_idx = -1
 
-        def gen_index_in_tuple(eager_out):
+        def gen_index_in_tuple(item):
             nonlocal tuple_idx
-            tuple_idx += 1
-            return "_OFTPI" + str(tuple_idx)  # oneflow tuple index
+            if isinstance(item, Tensor):
+                tuple_idx += 1
+                return "_OFTPI" + str(tuple_idx)  # oneflow tuple index
+            else:
+                return item
 
         inputs_sub_destination = OrderedDict()
         _fill_sub_destination(
             inputs_sub_destination, self._input_op_names, self._inputs_tensor_tuple
         )
 
-        _eager_inputs_args, _eager_inputs_kwargs = self.__map_io(
-            "input",
-            gen_index_in_tuple,
-            *self.inputs_original[0],
-            **self.inputs_original[1],
+        _eager_inputs_args, _eager_inputs_kwargs = self.__map_io_lite(
+            gen_index_in_tuple, *self.inputs_original[0], **self.inputs_original[1],
         )
         destination["inputs"] = inputs_sub_destination
         destination["inputs_original"] = (_eager_inputs_args, _eager_inputs_kwargs)
 
         tuple_idx = -1
-        _eager_outputs, _ = self.__map_io(
-            "output", gen_index_in_tuple, *self._eager_outputs
-        )
+        _eager_outputs, _ = self.__map_io_lite(gen_index_in_tuple, *self._eager_outputs)
         destination["outputs_original"] = _eager_outputs
         assert len(self._outputs_tensor_tuple) == tuple_idx + 1
         outputs_sub_destination = OrderedDict()
@@ -1131,7 +1135,7 @@ class Graph(object):
             destination["states"] = states_sub_destination
 
         destination["exe_plan"] = self._c_nn_graph.plan
-        if self._enable_shared_from_this == True:
+        if self._enable_shared_from_this:
             destination["forward_graph"] = self._forward_job_proto
             destination["compile_graph"] = self._compiled_job_proto
 
@@ -1146,9 +1150,9 @@ class Graph(object):
             Dict[str, Dict[str, Union[Dict[str, Tensor], str]]],
         ],
         *,
-        warmup_with_run: bool = False,
+        warmup_with_run: bool = True,
     ) -> None:
-        if self._run_with_cache == True:
+        if self._run_with_cache:
             return self._dynamic_input_graph_cache.load_runtime_state_dict(
                 state_dict, warmup_with_run=warmup_with_run
             )
@@ -1221,7 +1225,7 @@ class Graph(object):
         self._eager_outputs = _eager_outputs
 
         # The base graph need extra info to create new shared graph
-        if self._enable_shared_from_this == True:
+        if self._enable_shared_from_this:
             self._forward_job_proto = state_dict["forward_graph"]
             self._compiled_job_proto = state_dict["compile_graph"]
             self._build_eager_outputs = self._eager_outputs
@@ -1293,6 +1297,7 @@ class Graph(object):
             self.__run(
                 *_eager_inputs_args, **_eager_inputs_kwargs
             )  # pre-run to warm up
+            oneflow._oneflow_internal.eager.Sync()
         build_graph_end = time.perf_counter()
         self.__print(
             0,
@@ -1303,6 +1308,53 @@ class Graph(object):
             + "s."
             + "\n",
         )
+
+    @staticmethod
+    def runtime_state_dict_to(
+        state_dict: Union[
+            Dict[str, Union[Dict[str, Tensor], str]],
+            Dict[str, Dict[str, Union[Dict[str, Tensor], str]]],
+        ],
+        device: str,
+    ) -> Union[
+        Dict[str, Union[Dict[str, Tensor], str]],
+        Dict[str, Dict[str, Union[Dict[str, Tensor], str]]],
+    ]:
+        if "job_id" not in state_dict:
+            from oneflow.nn.graph.cache import GraphCache
+
+            return GraphCache.runtime_state_dict_to(state_dict, device)
+
+        dest_device = oneflow.device(device)
+        assert dest_device.type == "cuda", "device must be cuda."
+
+        destination = OrderedDict()
+        destination._metadata = OrderedDict()
+        destination["oneflow_version"] = state_dict["oneflow_version"]
+        destination["graph_name"] = state_dict["graph_name"]
+        destination["job_id"] = state_dict["job_id"]
+        destination["inputs"] = _rsd_sub_destination_to(state_dict["inputs"], device)
+        destination["inputs_original"] = state_dict["inputs_original"]
+        destination["outputs"] = _rsd_sub_destination_to(state_dict["outputs"], device)
+        destination["outputs_original"] = state_dict["outputs_original"]
+        destination["oneflow_with_eager_tensor"] = state_dict[
+            "oneflow_with_eager_tensor"
+        ]
+        if "states" in state_dict:
+            destination["states"] = _rsd_sub_destination_to(
+                state_dict["states"], device
+            )
+        destination["exe_plan"] = _plan_to(state_dict["exe_plan"], dest_device)
+        if "forward_graph" in state_dict:
+            forward_graph = deepcopy(state_dict["forward_graph"])
+            _job_to(forward_graph, dest_device)
+            destination["forward_graph"] = forward_graph
+        if "compile_graph" in state_dict:
+            compile_graph = deepcopy(state_dict["compile_graph"])
+            _job_to(compile_graph, dest_device)
+            destination["compile_graph"] = compile_graph
+        destination["id_state"] = state_dict["id_state"]
+        return destination
 
     def build_graph(self, *args, **kwargs):
         # Build graph
