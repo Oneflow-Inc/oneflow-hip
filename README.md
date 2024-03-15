@@ -9,8 +9,8 @@ OneFlow 是一个深度学习框架，旨在**易用，可扩展且高效**。�
 
 ## Latest News
 
-- Version 0.9.0 is out!
-  - [Full changelog](https://github.com/Oneflow-Inc/oneflow/releases/tag/v0.9.0)
+- Version 1.0.0 is out!
+  - [Full changelog](https://github.com/Oneflow-Inc/oneflow/releases/tag/v1.0.0)
 
 ## 安装 OneFlow-DCU
 
